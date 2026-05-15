@@ -36,6 +36,28 @@ aws --endpoint-url http://localhost:4566 \
   sqs create-queue --queue-name my-queue
 ```
 
+## CDKはじめ方
+
+```bash
+cdk bootstrap
+```
+
+```bash
+✅  Environment aws://000000000000/us-east-1 bootstrapped.
+```
+
+## CDKデプロイ
+
+```bash
+npm run deploy
+```
+
+## CDKデストロイ
+
+```bash
+cdk destroy --force
+```
+
 ## 参考文献
 - [GitHub floci](https://github.com/floci-io/floci)
 - [floci 公式ドキュメント](https://floci.io/)
