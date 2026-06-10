@@ -71,6 +71,11 @@ cdk destroy --force
 
 `floci-dev-assistant`を自作
 
+## ハマったポイント
+
+- 一部制約があるためそのままbootstrapするとエラーが起きる
+  - 例えばECRが使えないなど
+
 ## 参考文献
 - [GitHub floci](https://github.com/floci-io/floci)
 - [floci 公式ドキュメント](https://floci.io/)
