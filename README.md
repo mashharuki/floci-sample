@@ -58,6 +58,24 @@ npm run deploy
 cdk destroy --force
 ```
 
+## CDKスタックファイルについて
+
+学習・検証用に作成したCDKスタックファイルがいくつかあります。
+
+## 検証に使用したAI Coding Agent
+
+- Claude Code
+- Codex
+
+## SKILLについて
+
+`floci-dev-assistant`を自作
+
 ## 参考文献
 - [GitHub floci](https://github.com/floci-io/floci)
 - [floci 公式ドキュメント](https://floci.io/)
+- [Deepwiki floci](https://deepwiki.com/floci-io/floci)
+- [Floci完全ガイド：LocalStack代替のAWSローカル開発環境【起動24ms・29サービス対応・1850テスト】](https://ai-heartland.com/tool/floci/)
+- [Flociが1ヵ月で41サービス対応へ - 怒涛のアップデートをまとめてみた](https://dev.classmethod.jp/articles/floci-one-month-update-41-services/)
+- [LocalStack Community Editionの代替として登場したFlociを試してみた](https://dev.classmethod.jp/articles/floci-localstack-alternative-aws-emulator-try/)
+- [Flociが公開から2ヵ月で52サービスへ、アップデートをまとめてみた](https://dev.classmethod.jp/articles/floci-two-months-52-services-update/)

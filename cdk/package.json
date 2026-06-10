@@ -2,6 +2,7 @@
   "name": "cdk",
   "version": "0.1.0",
   "scripts": {
+    "format": "bunx biome format --write .",
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
@@ -9,19 +10,27 @@
     "diff": "ckd diff",
     "synth": "cdk synth",
     "deploy": "cdk deploy",
-    "destroy": "cdk destroy"
+    "destroy": "cdk destroy",
+    "floci:up": "docker compose up -d",
+    "floci:setup": "bash scripts/setup-local-aws.sh",
+    "floci:down": "docker compose down",
+    "floci:cdk:bootstrap": "bash scripts/floci-cdk.sh bootstrap",
+    "floci:cdk:synth": "bash scripts/floci-cdk.sh synth",
+    "floci:cdk:deploy": "bash scripts/floci-cdk.sh deploy --all --require-approval never",
+    "floci:cdk:destroy": "bash scripts/floci-cdk.sh destroy --force"
   },
   "devDependencies": {
     "@types/jest": "^30",
     "@types/node": "^24.10.1",
     "jest": "^30",
     "ts-jest": "^29",
-    "aws-cdk": "2.1122.0",
+    "aws-cdk": "2.1126.0",
     "ts-node": "^10.9.2",
-    "typescript": "~5.9.3"
+    "typescript": "~5.9.3",
+    "@biomejs/biome": "^1.9.4"
   },
   "dependencies": {
-    "aws-cdk-lib": "^2.254.0",
+    "aws-cdk-lib": "2.258.1",
     "constructs": "^10.5.0"
   }
 }
