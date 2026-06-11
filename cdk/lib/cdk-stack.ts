@@ -19,5 +19,14 @@ export class CdkStack extends cdk.Stack {
     const queue = new sqs.Queue(this, "CdkQueue", {
       visibilityTimeout: cdk.Duration.seconds(300),
     });
+
+    // ========================================================================
+    // CDK成果物
+    // ========================================================================
+
+    new cdk.CfnOutput(this, 'CdkQueueOutput', {
+      value: queue.queueName,
+      exportName: 'FlociSampleCdkQueue', // 重要: 一意な名前
+    });
   }
 }

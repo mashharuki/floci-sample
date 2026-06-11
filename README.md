@@ -34,6 +34,15 @@ aws --endpoint-url http://localhost:4566 \
 
 aws --endpoint-url http://localhost:4566 \
   sqs create-queue --queue-name my-queue
+
+aws --endpoint-url http://localhost:4566 \
+  sqs list-queues
+```
+
+## DynamoDB取得
+
+```bash
+aws dynamodb list-tables --endpoint-url "http://localhost:4566" --region "us-east-1"
 ```
 
 ## CDKはじめ方
