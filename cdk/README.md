@@ -1,20 +1,64 @@
-# Welcome to your CDK TypeScript project
+# Floci CDK Sample
 
-This is a blank project for CDK development with TypeScript.
+Floci 上に AWS CDK で SQS キューと DynamoDB の Todo テーブルを作成する
+TypeScript サンプルです。
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+## 必要なツール
 
-## Useful commands
+- Bun
+- Docker Compose
+- AWS CLI v2
+- `jq`
 
-* `npm run build`   compile typescript to js
-* `npm run watch`   watch for changes and compile
-* `npm run test`    perform the jest unit tests
-* `npx cdk deploy`  deploy this stack to your default AWS account/region
-* `npx cdk diff`    compare deployed stack with current state
-* `npx cdk synth`   emits the synthesized CloudFormation template
-
-## デプロイ後にfloci上のSNSのリソースを取得するコマンド
+## Floci へのデプロイ
 
 ```bash
+bun install
+bun run floci:up
+bun run floci:setup
+bun run floci:cdk:bootstrap
+bun run floci:cdk:deploy
+```
 
+CDK ラッパーは以下のローカル設定を使用します。
+
+- endpoint: `http://localhost:4566`
+- account: `000000000000`
+- region: `us-east-1`
+- credentials: ダミー値
+
+Todo テーブルの定義元は
+[`config/todo-table.json`](config/todo-table.json) です。テーブル名は `Todos`、
+パーティションキーは文字列型の `id`、課金モードはオンデマンドです。
+
+## Todo CRUD
+
+CRUD スクリプトもテーブル定義 JSON からテーブル名を読み込み、常に Floci の
+エンドポイントへ接続します。
+
+```bash
+# Create
+bun run todo create todo-1 "Flociを試す" "DynamoDB CRUDを確認する"
+
+# Read
+bun run todo get todo-1
+bun run todo list
+
+# Update: id, title, description, completed
+bun run todo update todo-1 "Flociを試す" "CRUD確認済み" true
+
+# Delete
+bun run todo delete todo-1
+```
+
+存在済み ID の作成、存在しない ID の更新・削除は DynamoDB の条件式により
+失敗します。
+
+## 品質確認
+
+```bash
+bun run format
+bun run build
+bun run test
+bun run synth
 ```

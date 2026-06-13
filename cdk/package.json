@@ -17,7 +17,8 @@
     "floci:cdk:bootstrap": "bash scripts/floci-cdk.sh bootstrap",
     "floci:cdk:synth": "bash scripts/floci-cdk.sh synth",
     "floci:cdk:deploy": "bash scripts/floci-cdk.sh deploy --all --require-approval never",
-    "floci:cdk:destroy": "bash scripts/floci-cdk.sh destroy --force"
+    "floci:cdk:destroy": "bash scripts/floci-cdk.sh destroy --force",
+    "todo": "bash scripts/todo.sh"
   },
   "devDependencies": {
     "@types/jest": "^30",
