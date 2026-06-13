@@ -40,9 +40,10 @@ cd "$REPO_ROOT"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 if [[ "${1:-}" == "bootstrap" ]]; then
   npx cdk bootstrap \
+    -c target=floci \
     --template "$SCRIPT_DIR/bootstrap-no-ecr.yaml" \
     --cloudformation-execution-policies arn:aws:iam::aws:policy/AdministratorAccess \
     "${@:2}"
 else
-  npx cdk "$@"
+  npx cdk "$@" -c target=floci
 fi

@@ -1,0 +1,50 @@
+name: full-stack-serverless
+
+on:
+  push:
+    paths:
+      - "full-stack-serverless/**"
+      - ".github/workflows/full-stack-serverless.yml"
+  pull_request:
+    paths:
+      - "full-stack-serverless/**"
+      - ".github/workflows/full-stack-serverless.yml"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: full-stack-serverless/pnpm-lock.yaml
+      - name: Install
+        working-directory: full-stack-serverless
+        run: pnpm install --frozen-lockfile
+      - name: Generate contracts
+        working-directory: full-stack-serverless
+        run: |
+          pnpm generate
+          git diff --exit-code -- docs/openapi.yaml pkgs/frontend/src/generated/api.ts
+      - name: Quality
+        working-directory: full-stack-serverless
+        run: |
+          pnpm format:check
+          pnpm lint
+          pnpm typecheck
+          pnpm test
+          pnpm build
+      - name: Synth Floci
+        working-directory: full-stack-serverless/pkgs/cdk
+        run: pnpm exec cdk synth -c target=floci
+      - name: Synth AWS
+        working-directory: full-stack-serverless/pkgs/cdk
+        env:
+          CDK_DEFAULT_ACCOUNT: "123456789012"
+          CDK_DEFAULT_REGION: ap-northeast-1
+        run: pnpm exec cdk synth -c target=aws

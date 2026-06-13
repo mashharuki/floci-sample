@@ -1,3 +1,7 @@
-.DS_Store
-.learnings
-node_modules
+node_modules/
+dist/
+build/
+coverage/
+cdk.out*/
+cdk-outputs.json
+*.tsbuildinfo

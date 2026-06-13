@@ -17,7 +17,7 @@
       "**/out",
       "**/target",
       "**/public",
-      "**/cdk.out",
+      "**/cdk.out*",
       "**/docs",
       "**/aidlc-docs",
       "**/aidlc-inputs",
@@ -26,6 +26,8 @@
       "**/.vscode/**",
       "**/.serena/**",
       "**/.aws-aidlc-rule-details/**",
+      "**/pnpm-lock.yaml",
+      "**/src/generated/**",
       "**/tsconfig*.json",
       "**/jest.config.*",
       "**/cdk/build"

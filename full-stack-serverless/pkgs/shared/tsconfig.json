@@ -3,12 +3,10 @@
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "outDir": "dist",
-    "rootDir": ".",
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "skipLibCheck": true,
-    "types": ["node", "vitest/globals"]
+    "types": ["vitest/globals"]
   },
-  "include": ["src", "scripts", "test"]
+  "include": ["src", "test"]
 }

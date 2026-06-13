@@ -1,20 +1,33 @@
 {
-  "name": "backend",
+  "name": "@full-stack-serverless/backend",
   "type": "module",
   "version": "1.0.0",
   "private": true,
+  "exports": {
+    "./app": "./src/app.ts",
+    "./lambda": "./src/lambda.ts"
+  },
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js"
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "generate:openapi": "node --import tsx scripts/generate-openapi.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.936.0",
+    "@aws-sdk/lib-dynamodb": "^3.936.0",
+    "@full-stack-serverless/shared": "workspace:*",
     "@hono/node-server": "^1.19.14",
-    "hono": "^4.12.25"
+    "@hono/zod-openapi": "^1.2.2",
+    "hono": "^4.12.25",
+    "yaml": "^2.8.2"
   },
   "devDependencies": {
-    "@types/node": "^20.11.17",
-    "tsx": "^4.7.1",
-    "typescript": "^5.8.3"
+    "@types/node": "^24.12.3",
+    "tsx": "^4.21.0",
+    "typescript": "~5.9.3",
+    "vitest": "^4.0.18"
   }
 }

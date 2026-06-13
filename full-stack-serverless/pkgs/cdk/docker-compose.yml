@@ -6,6 +6,9 @@ services:
       - "4566:4566"
     environment:
       FLOCI_BASE_URL: "http://localhost:4566"
+      FLOCI_HOSTNAME: "floci"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:4566/_floci/health"]
       interval: 5s
