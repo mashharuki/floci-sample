@@ -1,40 +1,37 @@
 # Style and Conventions
 
-## Language
+## Language and CDK
 
-- Use TypeScript with strict typing.
-- The project uses ES2022 and NodeNext module/module resolution.
-- Prefer explicit AWS CDK L2 constructs from `aws-cdk-lib`.
-- Keep stack definitions under `cdk/lib/` and application entry points under `cdk/bin/`.
+- TypeScript strict、ES2022、NodeNext を維持し、`any` で回避しない。
+- AWS CDK L2 Construct を優先する。
+- エントリーポイントは `cdk/bin/`、Stack/Construct は `cdk/lib/`。
+- Stateful リソースの Construct ID を変更する場合は置換リスクを確認し、`cdk diff` を実行する。
+- DynamoDB Todo テーブルのスキーマ元は `cdk/config/todo-table.json`。CDK と CRUD スクリプトで別々のテーブル名をハードコードしない。
 
-## Formatting and Linting
+## Formatting
 
-- Biome is the formatter and linter.
-- Use spaces for indentation.
-- Use double quotes in JavaScript and TypeScript.
-- Let Biome organize imports.
-- Run `bun run format` before completing formatting-related changes.
+- Biome を使用。スペースインデント、TypeScript/JavaScript はダブルクォート、import 自動整理。
+- TypeScript/JSON 変更後は `bun run format`。
+- コメントは非自明な理由だけを簡潔に記述する。
 
-## Code Style
+## Shell Scripts
 
-- Follow the existing CDK construct pattern: import service modules, extend
-  `cdk.Stack`, and create resources inside the constructor.
-- Keep comments concise and useful. Existing source comments are partly Japanese;
-  preserve the language used by the surrounding file.
-- Avoid unrelated refactors in this learning repository.
-- Use ASCII unless the surrounding file already uses Japanese or another non-ASCII
-  character set.
+- `#!/usr/bin/env bash` と `set -euo pipefail` を使う。
+- 引数を引用し、JSON は文字列連結ではなく `jq` で生成する。
+- Floci 用スクリプトでは endpoint、region、ダミー認証情報を明示し、実 AWS への誤接続を防ぐ。
+- 変更後は `bash -n` で構文確認する。
 
 ## Tests
 
-- Tests live in `cdk/test/` and use `*.test.ts`.
-- Use Jest with `ts-jest`.
-- Prefer CDK assertions against synthesized templates rather than empty placeholder
-  tests.
+- Jest テストは `cdk/test/*.test.ts`。
+- `aws-cdk-lib/assertions` で合成テンプレートのリソース、プロパティ、Output を検証する。
+- 現在の基準は SQS、DynamoDB `Todos`、テーブル名 Output の3テスト。
 
 ## Local AWS Safety
 
-- For local emulator operations, always provide the Floci endpoint or use the wrapper
-  scripts.
-- Never use real AWS credentials for Floci.
-- Confirm endpoint, account, and region before deploy or destroy operations.
+- endpoint: `http://localhost:4566`
+- account: `000000000000`
+- region: `us-east-1`
+- credentials: ダミー値のみ
+- deploy/destroy 前に対象を確認する。
+- 実 AWS の bootstrap/deploy/destroy は明示依頼なしに実行しない。
