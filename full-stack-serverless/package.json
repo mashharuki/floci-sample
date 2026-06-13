@@ -1,0 +1,20 @@
+{
+  "name": "full-stack-serverless",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "format": "bunx biome format --write .",
+    "cdk": "pnpm --filter cdk",
+    "shared": "pnpm --filter shared",
+    "backend": "pnpm --filter backend",
+    "frontend": "pnpm --filter frontend"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.33.0",
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4"
+  }
+}
