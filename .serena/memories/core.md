@@ -1,10 +1,12 @@
 # Core
 
-`floci-sample` は Floci 上で AWS 互換リソースを学習・検証する AWS CDK TypeScript サンプル。
+`floci-sample` は Floci 上で AWS 互換リソースとサーバーレス構成を学習・検証するサンプル集。
 
-- 全体構成・現在のリソース: `mem:project_overview`
-- セットアップ、CDK、Todo CRUD、検証コマンド: `mem:suggested_commands`
-- TypeScript/CDK/shell の実装規約とローカル AWS 安全ルール: `mem:style_and_conventions`
+- リポジトリ全体と現在実装済みの機能: `mem:project_overview`
+- 3つの作業領域の状態・差分・パッケージ構成: `mem:workspace_status`
+- セットアップ、CDK、Todo CRUD、モノレポのコマンド: `mem:suggested_commands`
+- TypeScript/CDK/shell/モノレポの規約とローカル AWS 安全ルール: `mem:style_and_conventions`
+- `docs/plans.md` にある未実装のフルスタック/Blue-Green要件: `mem:roadmap/full_stack_serverless`
 - タスク完了時の必須確認: `mem:task_completion`
 
-主要作業ディレクトリは `cdk/`。Floci 操作では実 AWS を避け、必ずローカル専用ラッパーまたは `http://localhost:4566` を明示する。
+Floci 操作では実 AWS を避け、ローカル専用ラッパーまたは endpoint `http://localhost:4566` を明示する。実装済みの事実と計画中の要件を混同しない。

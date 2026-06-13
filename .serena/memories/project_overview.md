@@ -2,34 +2,42 @@
 
 ## Purpose
 
-`floci-sample` は、Floci 上で AWS 互換リソースをローカル学習・検証する AWS CDK TypeScript サンプル。現在は SQS キューと DynamoDB Todo テーブルを CDK で管理し、AWS CLI ベースの CRUD スクリプトを提供する。
+Floci 上で AWS 互換リソースと将来のサーバーレスアプリ構成をローカル学習・検証する TypeScript サンプル集。
 
-## Architecture
+## Current Top-Level Layout
 
-- `cdk/bin/cdk.ts`: CDK アプリのエントリーポイント。
-- `cdk/lib/cdk-stack.ts`: `CdkStack`。可視性タイムアウト300秒の SQS キューと `Todos` DynamoDB テーブルを定義。
-- `cdk/config/todo-table.json`: Todo テーブル定義の単一ソース。テーブル名 `Todos`、文字列パーティションキー `id`、`PAY_PER_REQUEST`。
-- `cdk/scripts/todo.sh`: `create/get/list/update/delete` を提供。JSON 定義からテーブル名を読み込む。
-- `cdk/test/cdk.test.ts`: CDK assertions で SQS、DynamoDB、CloudFormation Output を検証。
-- `cdk/scripts/floci-cdk.sh`: CDK/SDK を Floci に向ける。ダミー認証情報、account `000000000000`、region `us-east-1`。
-- `cdk/scripts/setup-local-aws.sh`: Floci ヘルスチェック待機。
-- `cdk/docker-compose.yml`: `floci/floci:latest` を port `4566` で起動。
+- `cdk/`: Bun 管理の単体 AWS CDK サンプル。
+- `full-stack-serverless/`: pnpm workspace のフルスタック用ベースプロジェクト。
+- `full-stack-serverless-blue-green/`: pnpm workspace の Blue/Green 用ベースプロジェクト。
+- `docs/plans.md`: 2つのモノレポを今後実装するための要件・計画。現在の実装状態ではない。
+
+各領域の現状は `mem:workspace_status`。
+
+## Implemented Infrastructure
+
+3つの CDK ディレクトリは現在同じ雛形。`CdkStack` は次を定義する。
+
+- 可視性タイムアウト300秒の SQS キュー `CdkQueue`。
+- DynamoDB `Todos` テーブル。文字列パーティションキー `id`、`PAY_PER_REQUEST`、`RemovalPolicy.DESTROY`。
+- Queue名とTodoテーブル名の CloudFormation Output。
+
+Todo テーブル定義の正本は各 CDK ディレクトリの `config/todo-table.json`。CLI CRUD は `scripts/todo.sh`。
+
+## Current Todo Behavior
+
+Todo item は `id`, `title`, `description`, `completed`, `createdAt`, `updatedAt` を保持する。重複 ID 作成と、存在しない ID の更新・削除は DynamoDB 条件式で拒否する。CRUD スクリプトは Floci endpoint とダミー認証情報を固定する。
 
 ## Technology
 
-- TypeScript 5.9、ES2022、NodeNext、strict mode
-- AWS CDK v2、Constructs v10
-- Bun、Jest 30、ts-jest、Biome 1.9
-- Docker Compose、AWS CLI v2、`curl`、`jq`
+- CDK: TypeScript 5.9、ES2022、NodeNext、AWS CDK v2、Constructs v10、Jest 30、Biome 1.9。
+- Monorepos: pnpm 10 workspace (`pkgs/*`)。
+- Backend templates: Hono 4 + Node server + TypeScript、現状は `GET /` の Hello Hono のみ。
+- Frontend templates: React 19 + Vite 8 + TypeScript、現状は Vite starter UI。
+- Shared packages: package manifest のみで実装なし。
 
-## Current Behavior
+## Safety and Known Issues
 
-Todo item は `id`, `title`, `description`, `completed`, `createdAt`, `updatedAt` を保持する。重複 ID の作成と、存在しない ID の更新・削除は DynamoDB 条件式で拒否する。CRUD スクリプトは endpoint `http://localhost:4566` とダミー認証情報を固定する。
-
-## Important Notes
-
-- パッケージコマンドは `cdk/` で実行する。
-- Floci ローカルフローの正しい region は `us-east-1`。
-- `package.json` の `diff` は `ckd diff` という既知の誤記があるため、修正までは `bunx cdk diff` または `npx cdk diff` を使う。
-- Stateful Construct ID `TodoTable` を安易に変更しない。論理 ID 変更による置換リスクがある。
-- ユーザーの未コミット変更を破棄・上書きしない。
+- Floci: endpoint `http://localhost:4566`, account `000000000000`, region `us-east-1`, dummy credentials only。
+- 実 AWS の bootstrap/deploy/destroy は明示依頼なしに実行しない。
+- 3つの CDK `package.json` の `diff` は `ckd diff` の誤記。`bunx cdk diff` または `npx cdk diff` を使う。
+- Stateful Construct ID `TodoTable` を安易に変更しない。
