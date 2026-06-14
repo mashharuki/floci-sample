@@ -83,10 +83,15 @@ pnpm destroy:floci
 `deploy:floci`は契約生成、品質確認、CDK deploy、環境別frontend build、S3 syncを順に実行します。destroy時は先にfrontend bucketを空にします。
 
 ```bash
-Floci URL:
-
-- App: http://localhost:4566/cdkstack-frontendbucketefe2e19c-e93ce050ea2d/index.html
-- API: http://localhost:4566/restapis/98e13da8d7/v1/_user_request_
+Outputs:
+CdkStack.ApiIdOutput = 70dc10aaf9
+CdkStack.ApiUrlOutput = http://localhost:4566/restapis/70dc10aaf9/v1/_user_request_
+CdkStack.AppUrlOutput = http://localhost:4566/cdkstack-frontendbucketefe2e19c-8d8ca1a69b2e/index.html
+CdkStack.FrontendBucketNameOutput = cdkstack-frontendbucketefe2e19c-8d8ca1a69b2e
+CdkStack.TodoApiEndpointC1E16B6C = https://70dc10aaf9.execute-api.us-east-1.amazonaws.com/v1/
+CdkStack.TodoTableNameOutput = Todos
+Stack ARN:
+arn:aws:cloudformation:us-east-1:000000000000:stack/CdkStack/94ef3c53-4c11-4a3d-9450-96103b33bdef
 ```
 
 ## AWS

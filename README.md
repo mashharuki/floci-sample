@@ -84,6 +84,7 @@ cdk destroy --force
 
 - 一部制約があるためそのままbootstrapするとエラーが起きる
   - 例えばECRが使えないなど
+  - セットアップ等は専用のコマンド化してしまった方が良い
 
 ## 参考文献
 - [GitHub floci](https://github.com/floci-io/floci)
