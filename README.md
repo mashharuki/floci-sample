@@ -85,6 +85,9 @@ cdk destroy --force
 - 一部制約があるためそのままbootstrapするとエラーが起きる
   - 例えばECRが使えないなど
   - セットアップ等は専用のコマンド化してしまった方が良い
+- ローカルとAWSでちゃんとアカウント情報を切り替える
+  - process.env.CDK_DEFAULT_ACCOUNTを設定する
+  - 切り替えられる設定にしておくとGood!
 
 ## 参考文献
 - [GitHub floci](https://github.com/floci-io/floci)

@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
 import * as origins from "aws-cdk-lib/aws-cloudfront-origins";
@@ -9,8 +7,11 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as lambdaNodejs from "aws-cdk-lib/aws-lambda-nodejs";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import * as s3deploy from "aws-cdk-lib/aws-s3-deployment";
 import * as cdk from "aws-cdk-lib/core";
 import type { Construct } from "constructs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 interface TodoTableDefinition {
   TableName: string;
@@ -72,6 +73,7 @@ export class CdkStack extends cdk.Stack {
     const api = new apigateway.RestApi(this, "TodoApi", {
       deployOptions: {
         stageName: "v1",
+        /*
         ...(apiLogs
           ? {
               accessLogDestination: new apigateway.LogGroupLogDestination(
@@ -81,6 +83,7 @@ export class CdkStack extends cdk.Stack {
                 apigateway.AccessLogFormat.jsonWithStandardFields(),
             }
           : {}),
+        */
       },
       endpointTypes: [apigateway.EndpointType.REGIONAL],
     });
@@ -145,6 +148,15 @@ export class CdkStack extends cdk.Stack {
         ],
       });
       appUrl = `https://${distribution.distributionDomainName}`;
+
+      new s3deploy.BucketDeployment(this, "FrontendDeploy", {
+        sources: [
+          s3deploy.Source.asset(join(__dirname, "../../frontend/dist")),
+        ],
+        destinationBucket: frontendBucket,
+        distribution,
+        distributionPaths: ["/*"],
+      });
     } else {
       frontendBucket.addToResourcePolicy(
         new iam.PolicyStatement({
@@ -158,6 +170,10 @@ export class CdkStack extends cdk.Stack {
     const apiUrl = isAws
       ? api.url
       : `http://localhost:4566/restapis/${api.restApiId}/v1/_user_request_`;
+
+    // ====================================================================================
+    // CDK成果物
+    // ====================================================================================
 
     new cdk.CfnOutput(this, "TodoTableNameOutput", {
       value: table.tableName,

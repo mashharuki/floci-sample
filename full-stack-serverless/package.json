@@ -16,7 +16,7 @@
     "cdk": "pnpm --filter @full-stack-serverless/cdk",
     "shared": "pnpm --filter @full-stack-serverless/shared",
     "backend": "pnpm --filter @full-stack-serverless/backend",
-    "frontend": "pnpm --filter @full-stack-serverless/fronend",
+    "frontend": "pnpm --filter @full-stack-serverless/frontend",
     "generate:openapi": "pnpm --filter @full-stack-serverless/backend generate:openapi",
     "generate:types": "openapi-typescript docs/openapi.yaml -o pkgs/frontend/src/generated/api.ts",
     "generate": "pnpm generate:openapi && pnpm generate:types",

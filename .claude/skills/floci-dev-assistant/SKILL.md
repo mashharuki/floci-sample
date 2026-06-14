@@ -21,6 +21,7 @@ Before diving into tasks, understand what kind of help is needed:
 - **"Add a new service"** → Read `agents/service-implementer.md`
 - **"Write tests"** → Read `agents/test-writer.md`
 - **"Debug an AWS compatibility issue"** → Read `agents/debug-assistant.md`
+- **"Deploy frontend to AWS (CDK + S3 + CloudFront)"** → Read `agents/cdk-frontend-deploy.md`
 - **"Explain the architecture"** → Use the Architecture section below
 - **"Configure storage / config entries"** → Use the Configuration section below
 - **"Run or build"** → See Quick Commands below
