@@ -1,8 +1,4 @@
-import type {
-  CreateTodoInput,
-  Todo,
-  UpdateTodoInput,
-} from "@fsbg/shared";
+import type { CreateTodoInput, Todo, UpdateTodoInput } from "@fsbg/shared";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { createApp } from "../src/app.js";
 import {

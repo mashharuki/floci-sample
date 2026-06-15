@@ -1,8 +1,4 @@
-import type {
-  CreateTodoInput,
-  Todo,
-  UpdateTodoInput,
-} from "@fsbg/shared";
+import type { CreateTodoInput, Todo, UpdateTodoInput } from "@fsbg/shared";
 import {
   TodoNotFoundError,
   type TodoRepository,

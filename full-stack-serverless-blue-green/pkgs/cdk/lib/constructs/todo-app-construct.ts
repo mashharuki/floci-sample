@@ -1,13 +1,13 @@
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
-import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
+import type * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as lambdaNodejs from "aws-cdk-lib/aws-lambda-nodejs";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as cdk from "aws-cdk-lib/core";
-import { join } from "node:path";
 import { Construct } from "constructs";
+import { join } from "node:path";
 
 export interface TodoAppConstructProps {
   color: "blue" | "green";
@@ -15,33 +15,52 @@ export interface TodoAppConstructProps {
   target: "floci" | "aws";
 }
 
+/**
+ * TodoアプリのCDKスタック
+ */
 export class TodoAppConstruct extends Construct {
+  /** API リソース */
   readonly api: apigateway.RestApi;
+  /** S3バケット */
   readonly bucket: s3.Bucket;
+  /** API URL */
   readonly apiUrl: string;
+  /** アプリ URL */
   readonly appUrl: string;
 
+  /**
+   * コンストラクター
+   * @param scope
+   * @param id
+   * @param props
+   */
   constructor(scope: Construct, id: string, props: TodoAppConstructProps) {
     super(scope, id);
     const { color, table, target } = props;
     const isAws = target === "aws";
     const colorCap = color[0].toUpperCase() + color.slice(1);
 
-    const fn = new lambdaNodejs.NodejsFunction(this, `TodoFunction${colorCap}`, {
-      entry: join(__dirname, "../../../backend/src/lambda.ts"),
-      runtime: lambda.Runtime.NODEJS_22_X,
-      handler: "handler",
-      environment: { TODO_TABLE_NAME: table.tableName },
-      bundling: { minify: true, sourceMap: true },
-      logGroup: isAws
-        ? new logs.LogGroup(this, `TodoFunctionLogs${colorCap}`, {
-            retention: logs.RetentionDays.ONE_WEEK,
-            removalPolicy: cdk.RemovalPolicy.DESTROY,
-          })
-        : undefined,
-    });
+    // Lambda 関数
+    const fn = new lambdaNodejs.NodejsFunction(
+      this,
+      `TodoFunction${colorCap}`,
+      {
+        entry: join(__dirname, "../../../backend/src/lambda.ts"),
+        runtime: lambda.Runtime.NODEJS_24_X,
+        handler: "handler",
+        environment: { TODO_TABLE_NAME: table.tableName },
+        bundling: { minify: true, sourceMap: true },
+        logGroup: isAws
+          ? new logs.LogGroup(this, `TodoFunctionLogs${colorCap}`, {
+              retention: logs.RetentionDays.ONE_WEEK,
+              removalPolicy: cdk.RemovalPolicy.DESTROY,
+            })
+          : undefined,
+      },
+    );
     table.grantReadWriteData(fn);
 
+    // API Gateway
     this.api = new apigateway.RestApi(this, `TodoApi${colorCap}`, {
       deployOptions: { stageName: "v1" },
       endpointTypes: [apigateway.EndpointType.REGIONAL],
@@ -51,10 +70,13 @@ export class TodoAppConstruct extends Construct {
       anyMethod: true,
     });
 
+    // S3バケット
     this.bucket = new s3.Bucket(this, `FrontendBucket${colorCap}`, {
       encryption: isAws ? s3.BucketEncryption.S3_MANAGED : undefined,
       enforceSSL: isAws,
-      objectOwnership: isAws ? s3.ObjectOwnership.BUCKET_OWNER_ENFORCED : undefined,
+      objectOwnership: isAws
+        ? s3.ObjectOwnership.BUCKET_OWNER_ENFORCED
+        : undefined,
       blockPublicAccess: isAws
         ? s3.BlockPublicAccess.BLOCK_ALL
         : new s3.BlockPublicAccess({

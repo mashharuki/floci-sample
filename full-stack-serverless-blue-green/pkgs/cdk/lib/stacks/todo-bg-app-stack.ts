@@ -1,8 +1,8 @@
-import * as apigateway from "aws-cdk-lib/aws-apigateway";
-import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
-import * as s3 from "aws-cdk-lib/aws-s3";
+import type * as apigateway from "aws-cdk-lib/aws-apigateway";
+import type * as dynamodb from "aws-cdk-lib/aws-dynamodb";
+import type * as s3 from "aws-cdk-lib/aws-s3";
 import * as cdk from "aws-cdk-lib/core";
-import { Construct } from "constructs";
+import type { Construct } from "constructs";
 import { TodoAppConstruct } from "../constructs/todo-app-construct";
 
 export interface TodoBgAppStackProps extends cdk.StackProps {
@@ -11,12 +11,21 @@ export interface TodoBgAppStackProps extends cdk.StackProps {
   target: "floci" | "aws";
 }
 
+/**
+ * Todoアプリ【Blue/Green】
+ */
 export class TodoBgAppStack extends cdk.Stack {
   readonly api: apigateway.RestApi;
   readonly bucket: s3.Bucket;
   readonly apiUrl: string;
   readonly appUrl: string;
 
+  /**
+   * コンストラクター
+   * @param scope 
+   * @param id 
+   * @param props 
+   */
   constructor(scope: Construct, id: string, props: TodoBgAppStackProps) {
     super(scope, id, props);
 
@@ -32,9 +41,15 @@ export class TodoBgAppStack extends cdk.Stack {
     this.apiUrl = app.apiUrl;
     this.appUrl = app.appUrl;
 
+    // ========================================================================
+    // CDKスタック成果物
+    // ========================================================================
+
     new cdk.CfnOutput(this, "ApiIdOutput", { value: app.api.restApiId });
     new cdk.CfnOutput(this, "ApiUrlOutput", { value: app.apiUrl });
-    new cdk.CfnOutput(this, "FrontendBucketNameOutput", { value: app.bucket.bucketName });
+    new cdk.CfnOutput(this, "FrontendBucketNameOutput", {
+      value: app.bucket.bucketName,
+    });
     new cdk.CfnOutput(this, "AppUrlOutput", { value: app.appUrl });
   }
 }

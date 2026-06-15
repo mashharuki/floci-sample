@@ -1,9 +1,9 @@
-import * as apigateway from "aws-cdk-lib/aws-apigateway";
+import type * as apigateway from "aws-cdk-lib/aws-apigateway";
 import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
 import * as origins from "aws-cdk-lib/aws-cloudfront-origins";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as cdk from "aws-cdk-lib/core";
-import { Construct } from "constructs";
+import type { Construct } from "constructs";
 
 export interface TodoBgRouterStackProps extends cdk.StackProps {
   active: "blue" | "green";
@@ -13,7 +13,16 @@ export interface TodoBgRouterStackProps extends cdk.StackProps {
   greenBucket: s3.Bucket;
 }
 
+/**
+ * Todo Blue/Green ルータースタック
+ */
 export class TodoBgRouterStack extends cdk.Stack {
+  /**
+   * コンストラクター
+   * @param scope 
+   * @param id 
+   * @param props 
+   */
   constructor(scope: Construct, id: string, props: TodoBgRouterStackProps) {
     super(scope, id, props);
 
@@ -24,19 +33,30 @@ export class TodoBgRouterStack extends cdk.Stack {
     // addToResourcePolicy を no-op にするため、RouterStack -> AppStack の
     // 一方向依存のみとなり循環が生じない。
     // 注: OAC 用バケットポリシーは実際のデプロイ時に別途手動付与が必要。
-    const importedBlueBucket = s3.Bucket.fromBucketAttributes(this, "ImportedBlueBucket", {
-      bucketArn: blueBucket.bucketArn,
-      bucketName: blueBucket.bucketName,
-    });
-    const importedGreenBucket = s3.Bucket.fromBucketAttributes(this, "ImportedGreenBucket", {
-      bucketArn: greenBucket.bucketArn,
-      bucketName: greenBucket.bucketName,
-    });
+    const importedBlueBucket = s3.Bucket.fromBucketAttributes(
+      this,
+      "ImportedBlueBucket",
+      {
+        bucketArn: blueBucket.bucketArn,
+        bucketName: blueBucket.bucketName,
+      },
+    );
+    const importedGreenBucket = s3.Bucket.fromBucketAttributes(
+      this,
+      "ImportedGreenBucket",
+      {
+        bucketArn: greenBucket.bucketArn,
+        bucketName: greenBucket.bucketName,
+      },
+    );
 
-    const blueOrigin = origins.S3BucketOrigin.withOriginAccessControl(importedBlueBucket);
-    const greenOrigin = origins.S3BucketOrigin.withOriginAccessControl(importedGreenBucket);
+    const blueOrigin =
+      origins.S3BucketOrigin.withOriginAccessControl(importedBlueBucket);
+    const greenOrigin =
+      origins.S3BucketOrigin.withOriginAccessControl(importedGreenBucket);
     const activeApi = active === "blue" ? blueApi : greenApi;
 
+    // CloudFrontでフロントとバックエンドを管理する
     const distribution = new cloudfront.Distribution(this, "Distribution", {
       defaultRootObject: "index.html",
       defaultBehavior: {
@@ -51,14 +71,27 @@ export class TodoBgRouterStack extends cdk.Stack {
           cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
           originRequestPolicy:
             cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
-          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          viewerProtocolPolicy:
+            cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         },
       },
       errorResponses: [
-        { httpStatus: 403, responseHttpStatus: 200, responsePagePath: "/index.html" },
-        { httpStatus: 404, responseHttpStatus: 200, responsePagePath: "/index.html" },
+        {
+          httpStatus: 403,
+          responseHttpStatus: 200,
+          responsePagePath: "/index.html",
+        },
+        {
+          httpStatus: 404,
+          responseHttpStatus: 200,
+          responsePagePath: "/index.html",
+        },
       ],
     });
+
+    // ========================================================================
+    // CDKスタック成果物
+    // ========================================================================
 
     new cdk.CfnOutput(this, "DistributionDomainOutput", {
       value: distribution.distributionDomainName,

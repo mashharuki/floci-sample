@@ -10,7 +10,10 @@ function createStacks(target: "floci" | "aws") {
     target === "floci"
       ? { account: "000000000000", region: "us-east-1" }
       : { account: "123456789012", region: "ap-northeast-1" };
-  const dataStack = new TodoBgDataStack(app, "TodoBgDataStack", { target, env });
+  const dataStack = new TodoBgDataStack(app, "TodoBgDataStack", {
+    target,
+    env,
+  });
   const blueStack = new TodoBgAppStack(app, "TodoBgBlueStack", {
     color: "blue",
     table: dataStack.table,
