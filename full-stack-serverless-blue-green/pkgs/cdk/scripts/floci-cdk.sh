@@ -44,6 +44,11 @@ if [[ "${1:-}" == "bootstrap" ]]; then
     --template "$SCRIPT_DIR/bootstrap-no-ecr.yaml" \
     --cloudformation-execution-policies arn:aws:iam::aws:policy/AdministratorAccess \
     "${@:2}"
+elif [[ "${1:-}" == "deploy" ]]; then
+  npx cdk deploy \
+    -c target=floci \
+    --outputs-file "$SCRIPT_DIR/../cdk-outputs.json" \
+    "${@:2}"
 else
   npx cdk "$@" -c target=floci
 fi
