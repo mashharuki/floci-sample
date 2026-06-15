@@ -61,7 +61,12 @@ export const TodoListResponseSchema = z
   .object({ data: z.array(TodoSchema) })
   .openapi("TodoListResponse");
 export const HealthResponseSchema = z
-  .object({ data: z.object({ status: z.literal("ok") }) })
+  .object({
+    data: z.object({
+      status: z.literal("ok"),
+      color: z.enum(["blue", "green"]),
+    }),
+  })
   .openapi("HealthResponse");
 
 export type Todo = z.infer<typeof TodoSchema>;

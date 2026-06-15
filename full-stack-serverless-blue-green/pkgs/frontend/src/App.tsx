@@ -5,8 +5,14 @@ import {
   type UpdateTodoInput,
 } from "@fsbg/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { type FormEvent, useMemo, useState } from "react";
-import { createTodo, deleteTodo, listTodos, updateTodo } from "./api";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
+import {
+  createTodo,
+  deleteTodo,
+  getHealth,
+  listTodos,
+  updateTodo,
+} from "./api";
 import "./App.css";
 
 type Filter = "all" | "active" | "completed";
@@ -23,8 +29,21 @@ export default function App() {
   const [description, setDescription] = useState("");
   const [editingId, setEditingId] = useState<string>();
   const [notice, setNotice] = useState("");
+  const healthQuery = useQuery({
+    queryKey: ["health"],
+    queryFn: getHealth,
+    staleTime: Number.POSITIVE_INFINITY,
+  });
+  const appColor = healthQuery.data?.color ?? "blue";
   const todosQuery = useQuery({ queryKey: todosKey, queryFn: listTodos });
   const todos = todosQuery.data ?? [];
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", appColor);
+    return () => {
+      document.documentElement.removeAttribute("data-theme");
+    };
+  }, [appColor]);
 
   const optimisticMutation = <TVariables,>(
     mutationFn: (variables: TVariables) => Promise<unknown>,
@@ -129,6 +148,9 @@ export default function App() {
           <p className="eyebrow">DAILY REGISTER / {new Date().getFullYear()}</p>
           <h1>今日の余白</h1>
           <p className="lede">やることを記し、終えたものには静かに線を引く。</p>
+          <span className="env-badge" aria-label={`環境: ${appColor}`}>
+            {appColor.toUpperCase()}
+          </span>
         </div>
         <div className="count-block" aria-label={`未完了 ${remaining}件`}>
           <strong>{String(remaining).padStart(2, "0")}</strong>

@@ -1,8 +1,8 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as cdk from "aws-cdk-lib/core";
 import type { Construct } from "constructs";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 
 interface TodoTableDefinition {
   TableName: string;
@@ -27,9 +27,9 @@ export class TodoBgDataStack extends cdk.Stack {
 
   /**
    * コンストラクター
-   * @param scope 
-   * @param id 
-   * @param props 
+   * @param scope
+   * @param id
+   * @param props
    */
   constructor(scope: Construct, id: string, props: TodoBgDataStackProps) {
     super(scope, id, props);
@@ -47,7 +47,7 @@ export class TodoBgDataStack extends cdk.Stack {
     // ========================================================================
     // CDKスタック成果物
     // ========================================================================
-    
+
     new cdk.CfnOutput(this, "TodoTableNameOutput", {
       value: this.table.tableName,
     });

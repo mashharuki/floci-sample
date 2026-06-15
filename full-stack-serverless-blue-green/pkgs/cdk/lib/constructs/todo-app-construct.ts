@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import type * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as iam from "aws-cdk-lib/aws-iam";
@@ -7,7 +8,6 @@ import * as logs from "aws-cdk-lib/aws-logs";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as cdk from "aws-cdk-lib/core";
 import { Construct } from "constructs";
-import { join } from "node:path";
 
 export interface TodoAppConstructProps {
   color: "blue" | "green";
@@ -48,7 +48,7 @@ export class TodoAppConstruct extends Construct {
         entry: join(__dirname, "../../../backend/src/lambda.ts"),
         runtime: lambda.Runtime.NODEJS_24_X,
         handler: "handler",
-        environment: { TODO_TABLE_NAME: table.tableName },
+        environment: { TODO_TABLE_NAME: table.tableName, APP_COLOR: color },
         bundling: { minify: true, sourceMap: true },
         logGroup: isAws
           ? new logs.LogGroup(this, `TodoFunctionLogs${colorCap}`, {

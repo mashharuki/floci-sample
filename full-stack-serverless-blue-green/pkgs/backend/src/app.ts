@@ -23,6 +23,7 @@ import { TodoService } from "./services/todo-service.js";
 
 export interface AppDependencies {
   todoService: TodoService;
+  color?: "blue" | "green";
 }
 
 const healthRoute = createRoute({
@@ -101,7 +102,10 @@ export function createApp(dependencies: AppDependencies) {
   });
 
   app.openapi(healthRoute, (c) =>
-    c.json({ data: { status: "ok" as const } }, 200),
+    c.json(
+      { data: { status: "ok" as const, color: dependencies.color ?? "blue" } },
+      200,
+    ),
   );
   app.openapi(listTodosRoute, async (c) =>
     c.json({ data: await dependencies.todoService.list() }, 200),
@@ -143,9 +147,11 @@ export function createDefaultApp() {
   if (!tableName) {
     throw new Error("TODO_TABLE_NAME is required");
   }
+  const color = (process.env.APP_COLOR ?? "blue") as "blue" | "green";
   const client = DynamoDBDocumentClient.from(new DynamoDBClient({}));
   return createApp({
     todoService: new TodoService(new DynamoTodoRepository(client, tableName)),
+    color,
   });
 }
 

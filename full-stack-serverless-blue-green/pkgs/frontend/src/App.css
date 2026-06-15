@@ -199,6 +199,18 @@ h1 {
   font-weight: 700;
 }
 
+.env-badge {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 4px 14px;
+  border-radius: 2px;
+  font: 700 0.7rem / 1.6 var(--font-mono);
+  letter-spacing: 0.16em;
+  color: #fff;
+  background: var(--color-primary);
+  vertical-align: middle;
+}
+
 @keyframes register-entry {
   from {
     opacity: 0;

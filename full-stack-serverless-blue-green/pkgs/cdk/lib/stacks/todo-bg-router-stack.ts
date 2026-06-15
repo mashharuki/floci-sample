@@ -19,9 +19,9 @@ export interface TodoBgRouterStackProps extends cdk.StackProps {
 export class TodoBgRouterStack extends cdk.Stack {
   /**
    * コンストラクター
-   * @param scope 
-   * @param id 
-   * @param props 
+   * @param scope
+   * @param id
+   * @param props
    */
   constructor(scope: Construct, id: string, props: TodoBgRouterStackProps) {
     super(scope, id, props);

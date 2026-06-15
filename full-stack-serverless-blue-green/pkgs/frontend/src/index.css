@@ -18,6 +18,29 @@
   text-rendering: optimizeLegibility;
 }
 
+/* blue/green テーマ — data-theme="blue" または "green" を <html> に付与 */
+[data-theme="blue"] {
+  --color-primary: #1a3a5c;
+  --color-surface: #dde8f5;
+  --color-surface-alt: #c4d8ee;
+  --color-text: #0d1f2d;
+  --color-text-muted: #4a6880;
+  --color-accent: #2c6fad;
+  --color-line: #9ab4cb;
+  background: var(--color-surface);
+}
+
+[data-theme="green"] {
+  --color-primary: #1a4a2e;
+  --color-surface: #dceee4;
+  --color-surface-alt: #c0dfcc;
+  --color-text: #0d1f15;
+  --color-text-muted: #4a7260;
+  --color-accent: #2c7a4a;
+  --color-line: #9ab4a4;
+  background: var(--color-surface);
+}
+
 * {
   box-sizing: border-box;
 }

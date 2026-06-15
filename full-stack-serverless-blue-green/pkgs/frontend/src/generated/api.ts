@@ -249,6 +249,8 @@ export interface components {
       data: {
         /** @enum {string} */
         status: "ok";
+        /** @enum {string} */
+        color: "blue" | "green";
       };
     };
     ApiError: {

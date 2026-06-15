@@ -26,6 +26,14 @@ function unwrap<T>(data: T | undefined, error: unknown): T {
   return data;
 }
 
+export async function getHealth(): Promise<{
+  status: "ok";
+  color: "blue" | "green";
+}> {
+  const { data, error } = await client.GET("/api/health");
+  return unwrap(data, error).data;
+}
+
 export async function listTodos(): Promise<Todo[]> {
   const { data, error } = await client.GET("/api/todos");
   return unwrap(data, error).data.map((todo) => TodoSchema.parse(todo));

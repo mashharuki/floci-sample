@@ -22,9 +22,9 @@ export class TodoBgAppStack extends cdk.Stack {
 
   /**
    * コンストラクター
-   * @param scope 
-   * @param id 
-   * @param props 
+   * @param scope
+   * @param id
+   * @param props
    */
   constructor(scope: Construct, id: string, props: TodoBgAppStackProps) {
     super(scope, id, props);
