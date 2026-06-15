@@ -1,0 +1,21 @@
+{
+  "TodoBgDataStack": {
+    "TodoTableNameOutput": "Todos",
+    "ExportsOutputFnGetAttTodoTable585F1D6BArn557654A3": "arn:aws:dynamodb:us-east-1:000000000000:table/Todos",
+    "ExportsOutputRefTodoTable585F1D6BBAE41B2C": "Todos"
+  },
+  "TodoBgBlueStack": {
+    "TodoAppBlueTodoApiBlueEndpointB629ACD0": "https://3420cbf6a4.execute-api.us-east-1.amazonaws.com/v1/",
+    "ApiIdOutput": "3420cbf6a4",
+    "ApiUrlOutput": "http://localhost:4566/restapis/3420cbf6a4/v1/_user_request_",
+    "FrontendBucketNameOutput": "todobgbluestack-todoappbluefrontendbucketblue5b36d6b5-e4adebf90",
+    "AppUrlOutput": "http://localhost:4566/todobgbluestack-todoappbluefrontendbucketblue5b36d6b5-e4adebf90/index.html"
+  },
+  "TodoBgGreenStack": {
+    "TodoAppGreenTodoApiGreenEndpoint58BF2B79": "https://7549452608.execute-api.us-east-1.amazonaws.com/v1/",
+    "ApiIdOutput": "7549452608",
+    "ApiUrlOutput": "http://localhost:4566/restapis/7549452608/v1/_user_request_",
+    "FrontendBucketNameOutput": "todobggreenstack-todoappgreenfrontendbucketgreen6efa3b9d-47a9b1",
+    "AppUrlOutput": "http://localhost:4566/todobggreenstack-todoappgreenfrontendbucketgreen6efa3b9d-47a9b1/index.html"
+  }
+}

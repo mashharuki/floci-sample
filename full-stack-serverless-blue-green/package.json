@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "format": "biome check --write .",
-    "format:check": "biome check .",
+    "format:check": "biome check --write .",
     "typecheck": "pnpm -r --parallel typecheck",
     "test": "pnpm -r --parallel test",
     "build": "pnpm -r --parallel build",

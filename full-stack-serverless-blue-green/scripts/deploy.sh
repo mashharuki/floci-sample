@@ -38,6 +38,11 @@ BLUE_API_URL=$(jq -r '.TodoBgBlueStack.ApiUrlOutput' "$CDK_OUTPUTS")
 GREEN_BUCKET=$(jq -r '.TodoBgGreenStack.FrontendBucketNameOutput' "$CDK_OUTPUTS")
 GREEN_API_URL=$(jq -r '.TodoBgGreenStack.ApiUrlOutput' "$CDK_OUTPUTS")
 
+# Floci 向けダミー認証情報（AWS CLI は --endpoint-url 指定時も認証情報を要求するため）
+export AWS_ACCESS_KEY_ID="local"
+export AWS_SECRET_ACCESS_KEY="local"
+export AWS_DEFAULT_REGION="us-east-1"
+
 echo "=== Build & deploy Blue frontend ==="
 VITE_API_BASE_URL="$BLUE_API_URL" pnpm --filter frontend build
 aws --endpoint-url http://localhost:4566 --region us-east-1 \

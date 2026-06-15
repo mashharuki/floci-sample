@@ -14,8 +14,14 @@ components:
               type: string
               enum:
                 - ok
+            color:
+              type: string
+              enum:
+                - blue
+                - green
           required:
             - status
+            - color
       required:
         - data
     ApiError:
