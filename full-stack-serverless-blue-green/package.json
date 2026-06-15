@@ -1,20 +1,28 @@
 {
   "name": "full-stack-serverless-blue-green",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "private": true,
   "scripts": {
-    "format": "bunx biome format --write .",
-    "cdk": "pnpm --filter cdk",
-    "shared": "pnpm --filter shared",
-    "backend": "pnpm --filter backend",
-    "frontend": "pnpm --filter frontend"
+    "format": "biome check --write .",
+    "format:check": "biome check .",
+    "typecheck": "pnpm -r --parallel typecheck",
+    "test": "pnpm -r --parallel test",
+    "build": "pnpm -r --parallel build",
+    "generate:openapi": "pnpm --filter @fsbg/backend generate:openapi",
+    "generate:types": "openapi-typescript docs/openapi.yaml -o pkgs/frontend/src/generated/api.ts",
+    "generate": "pnpm generate:openapi && pnpm generate:types",
+    "dev": "concurrently \"pnpm --filter @fsbg/backend dev\" \"pnpm --filter frontend dev\"",
+    "cdk": "pnpm --filter @fsbg/cdk",
+    "deploy:floci": "bash scripts/deploy.sh floci",
+    "deploy:aws": "bash scripts/aws-guard.sh deploy",
+    "destroy:floci": "bash scripts/destroy.sh floci",
+    "destroy:aws": "bash scripts/aws-guard.sh destroy",
+    "switch": "bash scripts/switch.sh"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "packageManager": "pnpm@10.33.0",
-   "devDependencies": {
-    "@biomejs/biome": "^1.9.4"
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "concurrently": "^9.2.1",
+    "openapi-typescript": "^7.10.1"
   }
 }

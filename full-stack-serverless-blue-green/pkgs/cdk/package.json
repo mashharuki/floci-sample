@@ -1,5 +1,5 @@
 {
-  "name": "cdk",
+  "name": "@fsbg/cdk",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,7 +9,10 @@
     "test": "jest",
     "cdk": "cdk",
     "diff": "ckd diff",
-    "synth": "cdk synth",
+    "typecheck": "tsc --noEmit",
+    "synth": "cdk synth -c target=floci",
+    "synth:aws": "cdk synth -c target=aws",
+    "diff:aws": "cdk diff -c target=aws",
     "deploy": "cdk deploy",
     "destroy": "cdk destroy",
     "floci:up": "docker compose up -d",
