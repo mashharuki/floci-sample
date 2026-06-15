@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import * as cdk from "aws-cdk-lib/core";
-import { TodoBgAppStack } from "../lib/stacks/todo-bg-app-stack.js";
-import { TodoBgDataStack } from "../lib/stacks/todo-bg-data-stack.js";
-import { TodoBgRouterStack } from "../lib/stacks/todo-bg-router-stack.js";
+import { TodoBgAppStack } from "../lib/stacks/todo-bg-app-stack";
+import { TodoBgDataStack } from "../lib/stacks/todo-bg-data-stack";
+import { TodoBgRouterStack } from "../lib/stacks/todo-bg-router-stack";
 
 const app = new cdk.App();
 

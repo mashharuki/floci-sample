@@ -3,7 +3,7 @@ import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as cdk from "aws-cdk-lib/core";
 import { Construct } from "constructs";
-import { TodoAppConstruct } from "../constructs/todo-app-construct.js";
+import { TodoAppConstruct } from "../constructs/todo-app-construct";
 
 export interface TodoBgAppStackProps extends cdk.StackProps {
   color: "blue" | "green";
