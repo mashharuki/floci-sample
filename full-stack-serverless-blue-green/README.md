@@ -161,29 +161,32 @@ pnpm cdk floci:down
 ### 1. デプロイ（Blue アクティブ）
 
 ```bash
-ACTIVE=blue AWS_ACCOUNT_ID=xxxxxxxxxxxx CONFIRM_AWS_DEPLOY=yes pnpm deploy:aws
+ACTIVE=blue CONFIRM_AWS_DEPLOY=yes pnpm deploy:aws
 ```
+
+> `AWS_ACCOUNT_ID` は省略可能です。未指定の場合は `aws sts get-caller-identity` で自動取得します。
+> 明示的に指定したい場合は `AWS_ACCOUNT_ID=xxxxxxxxxxxx` を先頭に追加してください。
 
 ### 2. Blue/Green 切り替え（CloudFront のみ更新）
 
 ```bash
 # Green に切り替え
-ACTIVE=green AWS_ACCOUNT_ID=xxxxxxxxxxxx CONFIRM_AWS_DEPLOY=yes bash scripts/aws-guard.sh switch
+ACTIVE=green CONFIRM_AWS_DEPLOY=yes bash scripts/aws-guard.sh switch
 
 # Blue に戻す
-ACTIVE=blue AWS_ACCOUNT_ID=xxxxxxxxxxxx CONFIRM_AWS_DEPLOY=yes bash scripts/aws-guard.sh switch
+ACTIVE=blue CONFIRM_AWS_DEPLOY=yes bash scripts/aws-guard.sh switch
 ```
 
 ### 3. CloudFormation Diff 確認
 
 ```bash
-AWS_ACCOUNT_ID=xxxxxxxxxxxx CONFIRM_AWS_DEPLOY=yes bash scripts/aws-guard.sh diff
+CONFIRM_AWS_DEPLOY=yes bash scripts/aws-guard.sh diff
 ```
 
 ### 4. クリーンアップ
 
 ```bash
-AWS_ACCOUNT_ID=xxxxxxxxxxxx CONFIRM_AWS_DEPLOY=yes pnpm destroy:aws
+CONFIRM_AWS_DEPLOY=yes pnpm destroy:aws
 ```
 
 ## 開発環境での起動方法

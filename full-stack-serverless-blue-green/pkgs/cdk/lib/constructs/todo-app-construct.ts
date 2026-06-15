@@ -90,7 +90,24 @@ export class TodoAppConstruct extends Construct {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
-    if (!isAws) {
+    if (isAws) {
+      // CloudFront OAC からのアクセスを許可するバケットポリシー。
+      // RouterStack で distribution ARN を参照するとクロススタック循環が生じるため、
+      // アカウント内の CloudFront distribution をまとめて許可する条件で付与する。
+      this.bucket.addToResourcePolicy(
+        new iam.PolicyStatement({
+          sid: "AllowCloudFrontOAC",
+          actions: ["s3:GetObject"],
+          resources: [this.bucket.arnForObjects("*")],
+          principals: [new iam.ServicePrincipal("cloudfront.amazonaws.com")],
+          conditions: {
+            StringLike: {
+              "aws:SourceArn": `arn:aws:cloudfront::${cdk.Stack.of(this).account}:distribution/*`,
+            },
+          },
+        }),
+      );
+    } else {
       this.bucket.addToResourcePolicy(
         new iam.PolicyStatement({
           actions: ["s3:GetObject"],

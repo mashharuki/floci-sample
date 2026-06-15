@@ -30,9 +30,8 @@ export class TodoBgRouterStack extends cdk.Stack {
 
     // クロススタック依存循環を避けるため、バケットをインポート参照として扱う。
     // S3BucketOrigin.withOriginAccessControl はインポートバケットに対して
-    // addToResourcePolicy を no-op にするため、RouterStack -> AppStack の
-    // 一方向依存のみとなり循環が生じない。
-    // 注: OAC 用バケットポリシーは実際のデプロイ時に別途手動付与が必要。
+    // addToResourcePolicy を no-op にするため、OAC バケットポリシーは
+    // TodoAppConstruct 側でバケット作成時に付与している（クロスタック参照不要）。
     const importedBlueBucket = s3.Bucket.fromBucketAttributes(
       this,
       "ImportedBlueBucket",
