@@ -44,10 +44,28 @@ case "$ACTION" in
     ;;
   switch)
     echo "=== Switching active color to: $ACTIVE ==="
+
+    # アクティブ側スタックをアップデートして cross-stack export を確保する。
+    # RouterStack は両色の API を常に参照するため、対象色の restApiId export が
+    # 存在しない場合（初回切り替え直後など）にここで追加される。
+    if [[ "$ACTIVE" == "green" ]]; then
+      TARGET_STACK="TodoBgGreenStack"
+    else
+      TARGET_STACK="TodoBgBlueStack"
+    fi
+    CDK_DEFAULT_ACCOUNT="$AWS_ACCOUNT_ID" \
+      pnpm --filter @fsbg/cdk exec -- cdk deploy "$TARGET_STACK" \
+        -c target=aws -c active="$ACTIVE" \
+        --require-approval never \
+        --exclusively
+
+    # RouterStack だけを切り替える。--exclusively で依存スタックを再デプロイしない。
     CDK_DEFAULT_ACCOUNT="$AWS_ACCOUNT_ID" \
       pnpm --filter @fsbg/cdk exec -- cdk deploy TodoBgRouterStack \
         -c target=aws -c active="$ACTIVE" \
-        --require-approval never
+        --require-approval never \
+        --exclusively
+
     echo "=== Done. Active color: $ACTIVE ==="
     ;;
   destroy)
@@ -59,11 +77,18 @@ case "$ACTION" in
       --stack-name TodoBgRouterStack --region ap-northeast-1 \
       --query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo "NOT_FOUND")
     if [[ "$ROUTER_STATUS" != "NOT_FOUND" && "$ROUTER_STATUS" != "DELETE_COMPLETE" ]]; then
-      echo "=== Deleting TodoBgRouterStack (retaining BucketPolicy resources if any) ==="
-      aws cloudformation delete-stack \
-        --stack-name TodoBgRouterStack \
-        --retain-resources BlueBucketPolicy GreenBucketPolicy \
-        --region ap-northeast-1
+      echo "=== Deleting TodoBgRouterStack (status: $ROUTER_STATUS) ==="
+      if [[ "$ROUTER_STATUS" == "DELETE_FAILED" ]]; then
+        # --retain-resources は DELETE_FAILED 状態のときのみ指定可能
+        aws cloudformation delete-stack \
+          --stack-name TodoBgRouterStack \
+          --retain-resources BlueBucketPolicy GreenBucketPolicy \
+          --region ap-northeast-1
+      else
+        aws cloudformation delete-stack \
+          --stack-name TodoBgRouterStack \
+          --region ap-northeast-1
+      fi
       aws cloudformation wait stack-delete-complete \
         --stack-name TodoBgRouterStack \
         --region ap-northeast-1

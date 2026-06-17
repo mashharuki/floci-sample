@@ -29,9 +29,6 @@ export class TodoBgRouterStack extends cdk.Stack {
     const { active, blueApi, greenApi, blueBucket, greenBucket } = props;
 
     // クロススタック依存循環を避けるため、バケットをインポート参照として扱う。
-    // S3BucketOrigin.withOriginAccessControl はインポートバケットに対して
-    // addToResourcePolicy を no-op にするため、OAC バケットポリシーは
-    // TodoAppConstruct 側でバケット作成時に付与している（クロスタック参照不要）。
     const importedBlueBucket = s3.Bucket.fromBucketAttributes(
       this,
       "ImportedBlueBucket",
@@ -49,11 +46,29 @@ export class TodoBgRouterStack extends cdk.Stack {
       },
     );
 
-    const blueOrigin =
-      origins.S3BucketOrigin.withOriginAccessControl(importedBlueBucket);
-    const greenOrigin =
-      origins.S3BucketOrigin.withOriginAccessControl(importedGreenBucket);
+    // OAC を事前に作成して安定させる。
+    // active の切り替え時に OAC が create/delete されると Distribution 更新が
+    // 不安定になるため、両色分の OAC を常に保持し Distribution だけを変更する。
+    const blueOac = new cloudfront.S3OriginAccessControl(this, "BlueS3Oac", {
+      description: "OAC for blue frontend S3 bucket",
+    });
+    const greenOac = new cloudfront.S3OriginAccessControl(this, "GreenS3Oac", {
+      description: "OAC for green frontend S3 bucket",
+    });
+
+    const blueOrigin = origins.S3BucketOrigin.withOriginAccessControl(
+      importedBlueBucket,
+      { originAccessControl: blueOac },
+    );
+    const greenOrigin = origins.S3BucketOrigin.withOriginAccessControl(
+      importedGreenBucket,
+      { originAccessControl: greenOac },
+    );
+
     const activeApi = active === "blue" ? blueApi : greenApi;
+    // 非アクティブ側の API も additionalBehaviors に常に含めることで
+    // 切り替え時に cross-stack export が削除されず CloudFormation エラーを防ぐ。
+    const standbyApi = active === "blue" ? greenApi : blueApi;
 
     // CloudFrontでフロントとバックエンドを管理する
     const distribution = new cloudfront.Distribution(this, "Distribution", {
@@ -70,6 +85,14 @@ export class TodoBgRouterStack extends cdk.Stack {
           cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
           originRequestPolicy:
             cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
+          viewerProtocolPolicy:
+            cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        },
+        // 非アクティブ側 API を常に参照することで cross-stack export を安定させる。
+        // このパスはアプリからは呼び出されない内部ルート。
+        "/_bg-standby/*": {
+          origin: new origins.RestApiOrigin(standbyApi),
+          cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
           viewerProtocolPolicy:
             cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         },
