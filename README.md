@@ -98,3 +98,4 @@ cdk destroy --force
 - [LocalStack Community Editionの代替として登場したFlociを試してみた](https://dev.classmethod.jp/articles/floci-localstack-alternative-aws-emulator-try/)
 - [Flociが公開から2ヵ月で52サービスへ、アップデートをまとめてみた](https://dev.classmethod.jp/articles/floci-two-months-52-services-update/)
 - [Meet Floci: a fast, free, no-strings AWS emulator (no auth token, no quotas)](https://dev.to/hectorvent/meet-floci-a-fast-free-no-strings-aws-emulator-no-auth-token-no-quotas-2gdh)
+- [Deepwiki floci 解説](https://deepwiki.com/search/floci_54868ce7-a23f-4223-bb60-eaba8c286c89)
