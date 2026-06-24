@@ -17,6 +17,7 @@ export interface TodoBgRouterStackProps extends cdk.StackProps {
  * Todo Blue/Green ルータースタック
  */
 export class TodoBgRouterStack extends cdk.Stack {
+
   /**
    * コンストラクター
    * @param scope
@@ -55,7 +56,7 @@ export class TodoBgRouterStack extends cdk.Stack {
     const greenOac = new cloudfront.S3OriginAccessControl(this, "GreenS3Oac", {
       description: "OAC for green frontend S3 bucket",
     });
-
+    // Blue/Green それぞれでオリジンを設定
     const blueOrigin = origins.S3BucketOrigin.withOriginAccessControl(
       importedBlueBucket,
       { originAccessControl: blueOac },
@@ -78,6 +79,7 @@ export class TodoBgRouterStack extends cdk.Stack {
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         compress: true,
       },
+      // バックエンド用のビヘイビア設定
       additionalBehaviors: {
         "/api/*": {
           origin: new origins.RestApiOrigin(activeApi),
@@ -97,6 +99,7 @@ export class TodoBgRouterStack extends cdk.Stack {
             cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         },
       },
+      /** カスタムエラーページの設定(今回は index.htmlを設定d) */
       errorResponses: [
         {
           httpStatus: 403,

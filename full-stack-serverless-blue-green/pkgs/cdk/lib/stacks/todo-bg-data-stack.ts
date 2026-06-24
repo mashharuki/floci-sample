@@ -1,8 +1,8 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as cdk from "aws-cdk-lib/core";
 import type { Construct } from "constructs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 interface TodoTableDefinition {
   TableName: string;
@@ -11,6 +11,7 @@ interface TodoTableDefinition {
   BillingMode: "PAY_PER_REQUEST";
 }
 
+// テーブル定義
 const definition = JSON.parse(
   readFileSync(join(__dirname, "../../config/todo-table.json"), "utf8"),
 ) as TodoTableDefinition;
@@ -34,6 +35,7 @@ export class TodoBgDataStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: TodoBgDataStackProps) {
     super(scope, id, props);
 
+    // DynamoDB Stackを作成
     this.table = new dynamodb.Table(this, "TodoTable", {
       tableName: definition.TableName,
       partitionKey: {

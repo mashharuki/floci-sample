@@ -15,9 +15,13 @@ export interface TodoBgAppStackProps extends cdk.StackProps {
  * Todoアプリ【Blue/Green】
  */
 export class TodoBgAppStack extends cdk.Stack {
+  /** API Gatewayによって作成されるREST APIリソース */
   readonly api: apigateway.RestApi;
+  /** S3バケット */
   readonly bucket: s3.Bucket;
+  /** APIのエンドポイントURL */
   readonly apiUrl: string;
+  /** アプリケーションURL */
   readonly appUrl: string;
 
   /**
@@ -30,6 +34,8 @@ export class TodoBgAppStack extends cdk.Stack {
     super(scope, id, props);
 
     const colorCap = props.color[0].toUpperCase() + props.color.slice(1);
+
+    // Appを作成
     const app = new TodoAppConstruct(this, `TodoApp${colorCap}`, {
       color: props.color,
       table: props.table,
