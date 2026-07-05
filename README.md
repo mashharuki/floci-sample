@@ -318,3 +318,4 @@ cdk destroy --force
 - [入門！ AWS Blocks](https://speakerdeck.com/ysuzuki/ru-men-aws-blocks)
 - [【AWS Blocks 入門】AWSのIfCツール「AWS Blocks」を体験してみた！](https://qiita.com/yosuke-suzuki/items/aaac7afe22edf08d8d7d)
 - [GitHub AWS Blocks](https://github.com/aws-devtools-labs/aws-blocks)
+- [2026年6月 Flociアップデートまとめ、CloudFormationとWebコンソールに対応した1ヵ月](https://dev.classmethod.jp/articles/floci-2026-06-cloudformation-web-console-update/)
