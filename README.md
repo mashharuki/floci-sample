@@ -313,3 +313,8 @@ cdk destroy --force
 - [Flociが公開から2ヵ月で52サービスへ、アップデートをまとめてみた](https://dev.classmethod.jp/articles/floci-two-months-52-services-update/)
 - [Meet Floci: a fast, free, no-strings AWS emulator (no auth token, no quotas)](https://dev.to/hectorvent/meet-floci-a-fast-free-no-strings-aws-emulator-no-auth-token-no-quotas-2gdh)
 - [Deepwiki floci 解説](https://deepwiki.com/search/floci_54868ce7-a23f-4223-bb60-eaba8c286c89)
+- [【初心者向け】 LocalStackの概要と基本的な使い方について解説します](https://dev.classmethod.jp/articles/how-to-localstack/)
+- [LocalStack を用いてローカルに AWS 環境を構築する](https://developers.play.jp/entry/2025/06/05/171137)
+- [入門！ AWS Blocks](https://speakerdeck.com/ysuzuki/ru-men-aws-blocks)
+- [【AWS Blocks 入門】AWSのIfCツール「AWS Blocks」を体験してみた！](https://qiita.com/yosuke-suzuki/items/aaac7afe22edf08d8d7d)
+- [GitHub AWS Blocks](https://github.com/aws-devtools-labs/aws-blocks)
