@@ -1,0 +1,31 @@
+{
+  "TableName": "Todos",
+  "AttributeDefinitions": [
+    {
+      "AttributeName": "id",
+      "AttributeType": "S"
+    }
+  ],
+  "KeySchema": [
+    {
+      "AttributeName": "id",
+      "KeyType": "HASH"
+    }
+  ],
+  "BillingMode": "PAY_PER_REQUEST",
+  "AttributeModel": {
+    "id": "UUID string",
+    "title": "1-100 character string",
+    "description": "0-500 character string",
+    "completed": "boolean",
+    "createdAt": "ISO 8601 UTC string",
+    "updatedAt": "ISO 8601 UTC string"
+  },
+  "AccessPatterns": [
+    "Get a Todo by id",
+    "Create a Todo with a unique id",
+    "Update or delete an existing Todo by id",
+    "Scan all Todos and sort by createdAt in the application"
+  ],
+  "GlobalSecondaryIndexes": []
+}
