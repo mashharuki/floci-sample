@@ -1,14 +1,22 @@
-# Full Stack Serverless Todo
+# Multi-Region KMS Key API
 
-認証なし・単一利用者向けのTodoアプリです。同じReact/Honoコードを、ローカル開発、Floci統合環境、AWSへ展開します。
+AWS KMS のマルチリージョン非対称キーを作成し、東京と大阪のどちらの関連キーでも署名・検証できることを確認する API サンプルです。AWS target は `ap-northeast-1` に API Gateway/Lambda/DynamoDB を置き、KMS primary を東京、replica を `ap-northeast-3` に作成します。Floci target は KMS 未対応でも検証できるよう、Node.js `crypto` による local provider を使います。
 
-## 機能
+## API
 
-- Todoの一覧、追加、編集、完了切替、削除
-- 全件・未完了・完了フィルター、件数、空状態、再試行、通知
-- TanStack Queryによる楽観更新と失敗時rollback
-- Zodを正本とする入力検証、OpenAPI 3.1、生成API型
-- DynamoDB条件式による重複作成・存在しないTodoの更新削除防止
+成功は `{ "data": ... }`、失敗は `{ "error": { "code", "message", "details?" } }` です。契約は [docs/openapi.yaml](docs/openapi.yaml) が正本です。
+
+| Method | Path | Result |
+| --- | --- | --- |
+| GET | `/api/health` | health |
+| POST | `/api/key-sets` | 東京 primary、大阪 replica、alias、metadata を作成 |
+| GET | `/api/key-sets` | key set 一覧 |
+| GET | `/api/key-sets/{keySetId}` | key set 詳細 |
+| DELETE | `/api/key-sets/{keySetId}` | replica と primary の削除予約 |
+| POST | `/api/key-sets/{keySetId}/sign` | base64 message を `ECDSA_SHA_256` で署名 |
+| POST | `/api/key-sets/{keySetId}/verify` | base64 signature を検証 |
+
+`region` は `tokyo` または `osaka` です。署名方式は `ECC_NIST_P256` + `ECDSA_SHA_256` 固定です。
 
 ## 構成
 
@@ -16,99 +24,60 @@
 .
 ├── docs/openapi.yaml
 ├── scripts/
-├── pkgs/
-│   ├── shared/    # Zod schemaと共有型
-│   ├── backend/   # Hono、service、DynamoDB repository
-│   ├── frontend/  # React、TanStack Query、openapi-fetch
-│   └── cdk/       # target=floci|aws
-└── .github/workflows/quality.yml
+└── pkgs/
+    ├── shared/   # Zod schema と OpenAPI 生成型
+    ├── backend/  # Hono API、KMS provider、DynamoDB repository
+    └── cdk/      # target=floci|aws
 ```
 
 ```mermaid
 flowchart LR
-  Browser -->|AWS| CF[CloudFront]
-  Browser -->|Floci| S3[S3 REST URL]
-  CF --> S3
-  CF -->|/api/*| APIGW[API Gateway REST API]
-  Browser -->|Floci API URL| APIGW
+  Client --> APIGW[API Gateway REST API]
   APIGW --> Lambda[Lambda / Hono]
-  Lambda --> DDB[(DynamoDB Todos)]
+  Lambda --> DDB[(DynamoDB MultiRegionKeySets)]
+  Lambda -->|AWS target| KmsTokyo[KMS primary ap-northeast-1]
+  Lambda -->|AWS target| KmsOsaka[KMS replica ap-northeast-3]
+  Lambda -->|Floci target| Local[Local P-256 provider]
 ```
-
-AWSではCloudFront、private S3、API Gateway、Lambda、DynamoDB、CloudWatch Logsを使います。FlociではCloudFrontを作らず、公開GET可能なS3 REST URLを使用します。
-
-## API
-
-| Method | Path | Result |
-| --- | --- | --- |
-| GET | `/api/health` | health |
-| GET | `/api/todos` | `createdAt`降順の全件 |
-| GET | `/api/todos/{id}` | 1件 |
-| POST | `/api/todos` | 201で作成 |
-| PATCH | `/api/todos/{id}` | 部分更新 |
-| DELETE | `/api/todos/{id}` | 204で削除 |
-
-成功は`{ "data": ... }`、エラーは`{ "error": { "code", "message", "details?" } }`です。詳細契約は[docs/openapi.yaml](docs/openapi.yaml)を参照してください。
-
-## テーブル
-
-`Todos`は文字列`id`をpartition keyとする`PAY_PER_REQUEST`テーブルです。GSIとページングはありません。一覧はScan後にアプリケーションで並べ替えます。物理定義、属性モデル、アクセスパターンは[pkgs/cdk/config/todo-table.json](pkgs/cdk/config/todo-table.json)にあります。
 
 ## セットアップ
 
-Node.js 22とpnpm 10.33.0を使用します。
+Node.js 22 と pnpm 10.33.0 を使用します。
 
 ```bash
 pnpm install
 pnpm generate
-pnpm dev
+pnpm format:check
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
 ```
-
-ローカル開発はViteが`/api`を`http://localhost:3000`へproxyします。backendにはDynamoDBが必要なため、`TODO_TABLE_NAME`とAWS SDKが参照するローカル環境を用意してください。
 
 ## Floci
 
-Flociは`http://localhost:4566`、account `000000000000`、region `us-east-1`、dummy credentialsのみを使用します。
+Floci は `http://localhost:4566`、account `000000000000`、region `us-east-1`、dummy credentials のみを使用します。
 
 ```bash
-cd pkgs/cdk
-pnpm floci:up
-pnpm floci:setup
-pnpm floci:cdk:bootstrap
-cd ../..
+pnpm --filter @multiregion-key/cdk floci:up
+pnpm --filter @multiregion-key/cdk floci:setup
+pnpm --filter @multiregion-key/cdk floci:cdk:bootstrap
 pnpm deploy:floci
-pnpm destroy:floci
 ```
 
-`deploy:floci`は契約生成、品質確認、CDK deploy、環境別frontend build、S3 syncを順に実行します。destroy時は先にfrontend bucketを空にします。
-
-```bash
-Outputs:
-CdkStack.ApiIdOutput = 70dc10aaf9
-CdkStack.ApiUrlOutput = http://localhost:4566/restapis/70dc10aaf9/v1/_user_request_
-CdkStack.AppUrlOutput = http://localhost:4566/cdkstack-frontendbucketefe2e19c-8d8ca1a69b2e/index.html
-CdkStack.FrontendBucketNameOutput = cdkstack-frontendbucketefe2e19c-8d8ca1a69b2e
-CdkStack.TodoApiEndpointC1E16B6C = https://70dc10aaf9.execute-api.us-east-1.amazonaws.com/v1/
-CdkStack.TodoTableNameOutput = Todos
-Stack ARN:
-arn:aws:cloudformation:us-east-1:000000000000:stack/CdkStack/94ef3c53-4c11-4a3d-9450-96103b33bdef
-```
+`deploy:floci` は品質確認、CDK deploy、create/sign/verify/delete の smoke test を実行します。API URL は `CdkStack.ApiUrlOutput` に出力されます。
 
 ## AWS
 
-AWS targetは`ap-northeast-1`です。標準確認ではdeployせず、次を実行します。
+実 AWS では deploy/destroy 前に account 一致と明示確認を要求します。API Gateway は API Key + Usage Plan を必須にします。
 
 ```bash
-pnpm --filter @full-stack-serverless/cdk synth:aws
 AWS_ACCOUNT_ID=123456789012 pnpm diff:aws
-```
-
-実deploy/destroyはaccount一致と明示確認が必要です。
-
-```bash
 AWS_ACCOUNT_ID=123456789012 CONFIRM_AWS_DEPLOY=yes pnpm deploy:aws
 AWS_ACCOUNT_ID=123456789012 CONFIRM_AWS_DEPLOY=yes pnpm destroy:aws
 ```
+
+API Key の値は AWS コンソールまたは CLI で `ApiKeyIdOutput` から取得してください。
 
 ## 品質確認
 
@@ -119,14 +88,6 @@ pnpm lint
 pnpm typecheck
 pnpm test
 pnpm build
-pnpm --filter @full-stack-serverless/cdk synth
-pnpm --filter @full-stack-serverless/cdk synth:aws
+pnpm --filter @multiregion-key/cdk synth
+pnpm --filter @multiregion-key/cdk synth:aws
 ```
-
-CIは生成差分も検査し、deployは行いません。
-
-## 制約
-
-- 認証、複数利用者、ページング、検索、共有、添付は対象外
-- 学習環境のためDynamoDBを含む全リソースはdestroy可能
-- 実AWSのdeploy/destroyは明示操作時のみ

@@ -18,26 +18,31 @@ function templateFor(target: "floci" | "aws") {
 describe.each(["floci", "aws"] as const)("CdkStack target=%s", (target) => {
   const template = templateFor(target);
 
-  test("creates DynamoDB, Lambda, REST API, bucket, and outputs", () => {
+  test("creates DynamoDB, Lambda, REST API, and outputs", () => {
     template.hasResourceProperties("AWS::DynamoDB::Table", {
-      TableName: "Todos",
+      TableName: "MultiRegionKeySets",
       BillingMode: "PAY_PER_REQUEST",
-      KeySchema: [{ AttributeName: "id", KeyType: "HASH" }],
+      KeySchema: [{ AttributeName: "keySetId", KeyType: "HASH" }],
     });
     template.hasResourceProperties("AWS::Lambda::Function", {
       Runtime: "nodejs22.x",
       Environment: {
-        Variables: { TODO_TABLE_NAME: Match.anyValue() },
+        Variables: {
+          KEY_SETS_TABLE_NAME: Match.anyValue(),
+          KMS_PROVIDER: target === "aws" ? "aws" : "local",
+          PRIMARY_AWS_REGION: "ap-northeast-1",
+          REPLICA_AWS_REGION: "ap-northeast-3",
+        },
       },
     });
     template.resourceCountIs("AWS::ApiGateway::RestApi", 1);
-    template.resourceCountIs("AWS::S3::Bucket", 1);
+    template.resourceCountIs("AWS::S3::Bucket", 0);
     for (const output of [
-      "TodoTableNameOutput",
+      "KeySetsTableNameOutput",
       "ApiIdOutput",
       "ApiUrlOutput",
-      "FrontendBucketNameOutput",
-      "AppUrlOutput",
+      "PrimaryAwsRegionOutput",
+      "ReplicaAwsRegionOutput",
     ]) {
       template.hasOutput(output, {});
     }
@@ -62,34 +67,51 @@ describe.each(["floci", "aws"] as const)("CdkStack target=%s", (target) => {
   });
 });
 
-test("Floci omits CloudFront and allows public S3 reads", () => {
+test("Floci omits AWS-only API key and KMS IAM resources", () => {
   const template = templateFor("floci");
   template.resourceCountIs("AWS::CloudFront::Distribution", 0);
-  template.hasResourceProperties("AWS::S3::BucketPolicy", {
-    PolicyDocument: {
-      Statement: Match.arrayWith([
-        Match.objectLike({ Action: "s3:GetObject", Principal: { AWS: "*" } }),
-      ]),
+  template.resourceCountIs("AWS::ApiGateway::ApiKey", 0);
+  template.hasResourceProperties("AWS::Lambda::Function", {
+    Environment: {
+      Variables: Match.objectLike({
+        API_KEY_CHECK_DISABLED: "true",
+        KMS_PROVIDER: "local",
+      }),
     },
   });
 });
 
-test("AWS uses private S3, OAC, CloudFront, and /api behavior", () => {
+test("AWS requires API keys and grants scoped KMS actions", () => {
   const template = templateFor("aws");
-  template.hasResourceProperties("AWS::S3::Bucket", {
-    BucketEncryption: Match.anyValue(),
-    PublicAccessBlockConfiguration: {
-      BlockPublicAcls: true,
-      BlockPublicPolicy: true,
-      IgnorePublicAcls: true,
-      RestrictPublicBuckets: true,
+  template.resourceCountIs("AWS::ApiGateway::ApiKey", 1);
+  template.resourceCountIs("AWS::ApiGateway::UsagePlan", 1);
+  template.hasResourceProperties("AWS::ApiGateway::Method", {
+    ApiKeyRequired: true,
+  });
+  template.hasResourceProperties("AWS::Lambda::Function", {
+    Environment: {
+      Variables: Match.objectLike({
+        API_KEY_CHECK_DISABLED: "false",
+        KMS_PROVIDER: "aws",
+      }),
     },
   });
-  template.resourceCountIs("AWS::CloudFront::OriginAccessControl", 1);
-  template.hasResourceProperties("AWS::CloudFront::Distribution", {
-    DistributionConfig: {
-      CacheBehaviors: Match.arrayWith([
-        Match.objectLike({ PathPattern: "/api/*" }),
+  template.hasResourceProperties("AWS::IAM::Policy", {
+    PolicyDocument: {
+      Statement: Match.arrayWith([
+        Match.objectLike({
+          Action: "kms:CreateKey",
+          Condition: {
+            StringEquals: { "aws:RequestTag/App": "multiregion-key" },
+          },
+        }),
+        Match.objectLike({
+          Action: Match.arrayWith(["kms:Sign", "kms:Verify"]),
+          Resource: Match.arrayWith([
+            "arn:aws:kms:ap-northeast-1:123456789012:key/*",
+            "arn:aws:kms:ap-northeast-3:123456789012:key/*",
+          ]),
+        }),
       ]),
     },
   });

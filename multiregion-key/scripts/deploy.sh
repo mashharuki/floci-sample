@@ -28,13 +28,21 @@ pnpm build
 cd "$CDK_DIR"
 bash scripts/floci-cdk.sh deploy --all --require-approval never --outputs-file cdk-outputs.json
 API_URL="$(jq -r '.CdkStack.ApiUrlOutput' cdk-outputs.json)"
-BUCKET="$(jq -r '.CdkStack.FrontendBucketNameOutput' cdk-outputs.json)"
 
-cd "$ROOT"
-VITE_API_BASE_URL="$API_URL" pnpm --filter @full-stack-serverless/frontend build
-aws --endpoint-url "$ENDPOINT" --region "$REGION" s3 sync \
-  pkgs/frontend/dist "s3://$BUCKET" --delete
+MESSAGE="$(printf 'floci smoke' | base64)"
+CREATE_BODY='{"aliasName":"floci-smoke"}'
+KEY_SET_ID="$(curl -fsS -X POST "$API_URL/api/key-sets" \
+  -H 'content-type: application/json' \
+  -d "$CREATE_BODY" | jq -r '.data.keySetId')"
+SIGNATURE="$(curl -fsS -X POST "$API_URL/api/key-sets/$KEY_SET_ID/sign" \
+  -H 'content-type: application/json' \
+  -d "{\"region\":\"tokyo\",\"message\":\"$MESSAGE\"}" | jq -r '.data.signature')"
+curl -fsS -X POST "$API_URL/api/key-sets/$KEY_SET_ID/verify" \
+  -H 'content-type: application/json' \
+  -d "{\"region\":\"osaka\",\"message\":\"$MESSAGE\",\"signature\":\"$SIGNATURE\"}" \
+  | jq -e '.data.valid == true' >/dev/null
+curl -fsS -X DELETE "$API_URL/api/key-sets/$KEY_SET_ID" >/dev/null
 
 echo "Floci deploy complete"
 echo "API: $API_URL"
-echo "App: http://localhost:4566/$BUCKET/index.html"
+echo "Smoke key set: $KEY_SET_ID"

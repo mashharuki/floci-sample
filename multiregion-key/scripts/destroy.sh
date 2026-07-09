@@ -18,13 +18,7 @@ export AWS_SECRET_ACCESS_KEY="local"
 export AWS_DEFAULT_REGION="$REGION"
 
 echo "target=floci endpoint=$ENDPOINT account=000000000000 region=$REGION"
-if [[ -f "$OUTPUTS" ]]; then
-  BUCKET="$(jq -r '.CdkStack.FrontendBucketNameOutput // empty' "$OUTPUTS")"
-  if [[ -n "$BUCKET" ]]; then
-    aws --endpoint-url "$ENDPOINT" --region "$REGION" s3 rm \
-      "s3://$BUCKET" --recursive
-  fi
-fi
+[[ -f "$OUTPUTS" ]] && jq -r '.CdkStack.ApiUrlOutput // empty' "$OUTPUTS" >/dev/null
 
 cd "$CDK_DIR"
 bash scripts/floci-cdk.sh destroy --force

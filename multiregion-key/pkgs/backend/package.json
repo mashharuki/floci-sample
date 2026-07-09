@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.936.0",
+    "@aws-sdk/client-kms": "^3.936.0",
     "@aws-sdk/lib-dynamodb": "^3.936.0",
     "@multiregion-key/shared": "workspace:*",
     "@hono/node-server": "^1.19.14",

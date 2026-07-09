@@ -17,7 +17,7 @@
     "shared": "pnpm --filter @multiregion-key/shared",
     "backend": "pnpm --filter @multiregion-key/backend",
     "generate:openapi": "pnpm --filter @multiregion-key/backend generate:openapi",
-    "generate:types": "openapi-typescript docs/openapi.yaml -o pkgs/frontend/src/generated/api.ts",
+    "generate:types": "openapi-typescript docs/openapi.yaml -o pkgs/shared/src/generated/api.ts",
     "generate": "pnpm generate:openapi && pnpm generate:types",
     "deploy:floci": "bash scripts/deploy.sh floci",
     "diff:aws": "bash scripts/aws-guard.sh diff",

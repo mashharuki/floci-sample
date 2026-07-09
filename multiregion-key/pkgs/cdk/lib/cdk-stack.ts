@@ -1,48 +1,29 @@
+import { join } from "node:path";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
-import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
-import * as origins from "aws-cdk-lib/aws-cloudfront-origins";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as lambdaNodejs from "aws-cdk-lib/aws-lambda-nodejs";
 import * as logs from "aws-cdk-lib/aws-logs";
-import * as s3 from "aws-cdk-lib/aws-s3";
-import * as s3deploy from "aws-cdk-lib/aws-s3-deployment";
 import * as cdk from "aws-cdk-lib/core";
 import type { Construct } from "constructs";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-
-interface TodoTableDefinition {
-  TableName: string;
-  AttributeDefinitions: Array<{
-    AttributeName: string;
-    AttributeType: "S";
-  }>;
-  KeySchema: Array<{
-    AttributeName: string;
-    KeyType: "HASH";
-  }>;
-  BillingMode: "PAY_PER_REQUEST";
-}
 
 export interface CdkStackProps extends cdk.StackProps {
   target: "floci" | "aws";
 }
 
-const definition = JSON.parse(
-  readFileSync(join(__dirname, "../config/todo-table.json"), "utf8"),
-) as TodoTableDefinition;
+const primaryAwsRegion = "ap-northeast-1";
+const replicaAwsRegion = "ap-northeast-3";
 
 export class CdkStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: CdkStackProps) {
     super(scope, id, props);
 
     const isAws = props.target === "aws";
-    const table = new dynamodb.Table(this, "TodoTable", {
-      tableName: definition.TableName,
+    const table = new dynamodb.Table(this, "KeySetsTable", {
+      tableName: "MultiRegionKeySets",
       partitionKey: {
-        name: definition.KeySchema[0]?.AttributeName ?? "id",
+        name: "keySetId",
         type: dynamodb.AttributeType.STRING,
       },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
@@ -55,25 +36,75 @@ export class CdkStack extends cdk.Stack {
           removalPolicy: cdk.RemovalPolicy.DESTROY,
         })
       : undefined;
-    const backend = new lambdaNodejs.NodejsFunction(this, "TodoFunction", {
-      entry: join(__dirname, "../../backend/src/lambda.ts"),
-      runtime: lambda.Runtime.NODEJS_22_X,
-      handler: "handler",
-      environment: { TODO_TABLE_NAME: table.tableName },
-      bundling: { minify: true, sourceMap: true },
-      logGroup: isAws
-        ? new logs.LogGroup(this, "TodoFunctionLogs", {
-            retention: logs.RetentionDays.ONE_WEEK,
-            removalPolicy: cdk.RemovalPolicy.DESTROY,
-          })
-        : undefined,
-    });
+    const backend = new lambdaNodejs.NodejsFunction(
+      this,
+      "MultiRegionKeyFunction",
+      {
+        entry: join(__dirname, "../../backend/src/lambda.ts"),
+        runtime: lambda.Runtime.NODEJS_22_X,
+        handler: "handler",
+        environment: {
+          KEY_SETS_TABLE_NAME: table.tableName,
+          KMS_PROVIDER: isAws ? "aws" : "local",
+          PRIMARY_AWS_REGION: primaryAwsRegion,
+          REPLICA_AWS_REGION: replicaAwsRegion,
+          API_KEY_CHECK_DISABLED: isAws ? "false" : "true",
+        },
+        bundling: { minify: true, sourceMap: true },
+        logGroup: isAws
+          ? new logs.LogGroup(this, "MultiRegionKeyFunctionLogs", {
+              retention: logs.RetentionDays.ONE_WEEK,
+              removalPolicy: cdk.RemovalPolicy.DESTROY,
+            })
+          : undefined,
+      },
+    );
     table.grantReadWriteData(backend);
 
-    const api = new apigateway.RestApi(this, "TodoApi", {
+    if (isAws) {
+      backend.addToRolePolicy(
+        new iam.PolicyStatement({
+          actions: ["kms:CreateKey"],
+          resources: ["*"],
+          conditions: {
+            StringEquals: { "aws:RequestTag/App": "multiregion-key" },
+          },
+        }),
+      );
+      backend.addToRolePolicy(
+        new iam.PolicyStatement({
+          actions: ["kms:CreateAlias"],
+          resources: ["*"],
+          conditions: {
+            StringLike: { "kms:RequestAlias": "alias/mrk-sample/*" },
+          },
+        }),
+      );
+      backend.addToRolePolicy(
+        new iam.PolicyStatement({
+          actions: [
+            "kms:ReplicateKey",
+            "kms:DescribeKey",
+            "kms:ScheduleKeyDeletion",
+            "kms:Sign",
+            "kms:Verify",
+          ],
+          resources: [
+            `arn:aws:kms:${primaryAwsRegion}:${this.account}:key/*`,
+            `arn:aws:kms:${replicaAwsRegion}:${this.account}:key/*`,
+          ],
+          conditions: {
+            "ForAnyValue:StringLike": {
+              "kms:ResourceAliases": "alias/mrk-sample/*",
+            },
+          },
+        }),
+      );
+    }
+
+    const api = new apigateway.RestApi(this, "MultiRegionKeyApi", {
       deployOptions: {
         stageName: "v1",
-        /*
         ...(apiLogs
           ? {
               accessLogDestination: new apigateway.LogGroupLogDestination(
@@ -83,106 +114,41 @@ export class CdkStack extends cdk.Stack {
                 apigateway.AccessLogFormat.jsonWithStandardFields(),
             }
           : {}),
-        */
       },
       endpointTypes: [apigateway.EndpointType.REGIONAL],
     });
     api.root.addProxy({
       defaultIntegration: new apigateway.LambdaIntegration(backend),
       anyMethod: true,
+      defaultMethodOptions: { apiKeyRequired: isAws },
     });
-
-    const frontendBucket = new s3.Bucket(this, "FrontendBucket", {
-      encryption: isAws ? s3.BucketEncryption.S3_MANAGED : undefined,
-      enforceSSL: isAws,
-      objectOwnership: isAws
-        ? s3.ObjectOwnership.BUCKET_OWNER_ENFORCED
-        : undefined,
-      blockPublicAccess: isAws
-        ? s3.BlockPublicAccess.BLOCK_ALL
-        : new s3.BlockPublicAccess({
-            blockPublicAcls: false,
-            blockPublicPolicy: false,
-            ignorePublicAcls: false,
-            restrictPublicBuckets: false,
-          }),
-      publicReadAccess: !isAws,
-      autoDeleteObjects: isAws,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-    });
-
-    let appUrl = `http://localhost:4566/${frontendBucket.bucketName}/index.html`;
     if (isAws) {
-      const distribution = new cloudfront.Distribution(this, "Distribution", {
-        defaultRootObject: "index.html",
-        defaultBehavior: {
-          origin:
-            origins.S3BucketOrigin.withOriginAccessControl(frontendBucket),
-          viewerProtocolPolicy:
-            cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-          compress: true,
-        },
-        additionalBehaviors: {
-          "/api/*": {
-            origin: new origins.RestApiOrigin(api),
-            allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
-            cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
-            originRequestPolicy:
-              cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
-            viewerProtocolPolicy:
-              cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-            compress: true,
-          },
-        },
-        errorResponses: [
-          {
-            httpStatus: 403,
-            responseHttpStatus: 200,
-            responsePagePath: "/index.html",
-          },
-          {
-            httpStatus: 404,
-            responseHttpStatus: 200,
-            responsePagePath: "/index.html",
-          },
-        ],
+      const apiKey = api.addApiKey("ClientApiKey");
+      const plan = api.addUsagePlan("UsagePlan", {
+        throttle: { rateLimit: 10, burstLimit: 20 },
       });
-      appUrl = `https://${distribution.distributionDomainName}`;
-
-      new s3deploy.BucketDeployment(this, "FrontendDeploy", {
-        sources: [
-          s3deploy.Source.asset(join(__dirname, "../../frontend/dist")),
-        ],
-        destinationBucket: frontendBucket,
-        distribution,
-        distributionPaths: ["/*"],
+      plan.addApiKey(apiKey);
+      plan.addApiStage({ stage: api.deploymentStage });
+      new cdk.CfnOutput(this, "ApiKeyIdOutput", { value: apiKey.keyId });
+      new cdk.CfnOutput(this, "UsagePlanIdOutput", {
+        value: plan.usagePlanId,
       });
-    } else {
-      frontendBucket.addToResourcePolicy(
-        new iam.PolicyStatement({
-          actions: ["s3:GetObject"],
-          resources: [frontendBucket.arnForObjects("*")],
-          principals: [new iam.AnyPrincipal()],
-        }),
-      );
     }
 
     const apiUrl = isAws
       ? api.url
       : `http://localhost:4566/restapis/${api.restApiId}/v1/_user_request_`;
 
-    // ====================================================================================
-    // CDK成果物
-    // ====================================================================================
-
-    new cdk.CfnOutput(this, "TodoTableNameOutput", {
+    new cdk.CfnOutput(this, "KeySetsTableNameOutput", {
       value: table.tableName,
     });
     new cdk.CfnOutput(this, "ApiIdOutput", { value: api.restApiId });
     new cdk.CfnOutput(this, "ApiUrlOutput", { value: apiUrl });
-    new cdk.CfnOutput(this, "FrontendBucketNameOutput", {
-      value: frontendBucket.bucketName,
+    new cdk.CfnOutput(this, "PrimaryAwsRegionOutput", {
+      value: primaryAwsRegion,
     });
-    new cdk.CfnOutput(this, "AppUrlOutput", { value: appUrl });
+    new cdk.CfnOutput(this, "ReplicaAwsRegionOutput", {
+      value: replicaAwsRegion,
+    });
   }
 }

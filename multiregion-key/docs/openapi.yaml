@@ -1,0 +1,420 @@
+openapi: 3.1.0
+info:
+  title: Multi-Region KMS Key API
+  version: 1.0.0
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              enum:
+                - ok
+          required:
+            - status
+      required:
+        - data
+    ApiError:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              enum:
+                - VALIDATION_ERROR
+                - INVALID_JSON
+                - KEY_SET_NOT_FOUND
+                - KEY_SET_PENDING_DELETION
+                - KMS_PROVIDER_ERROR
+                - INTERNAL_ERROR
+            message:
+              type: string
+            details:
+              nullable: true
+          required:
+            - code
+            - message
+      required:
+        - error
+    KeySetListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/KeySet"
+      required:
+        - data
+    KeySet:
+      type: object
+      properties:
+        keySetId:
+          type: string
+          format: uuid
+        alias:
+          type: string
+        primary:
+          $ref: "#/components/schemas/KeySetRegion"
+        replica:
+          $ref: "#/components/schemas/KeySetRegion"
+        status:
+          $ref: "#/components/schemas/KeyStatus"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - keySetId
+        - alias
+        - primary
+        - replica
+        - status
+        - createdAt
+        - updatedAt
+    KeySetRegion:
+      type: object
+      properties:
+        region:
+          $ref: "#/components/schemas/Region"
+        awsRegion:
+          type: string
+        keyId:
+          type: string
+        keyArn:
+          type: string
+        status:
+          $ref: "#/components/schemas/KeyStatus"
+        deletionDate:
+          type: string
+          format: date-time
+      required:
+        - region
+        - awsRegion
+        - keyId
+        - keyArn
+        - status
+    Region:
+      type: string
+      enum:
+        - tokyo
+        - osaka
+    KeyStatus:
+      type: string
+      enum:
+        - ACTIVE
+        - PENDING_DELETION
+    KeySetResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/KeySet"
+      required:
+        - data
+    CreateKeySet:
+      type: object
+      properties:
+        aliasName:
+          type: string
+          minLength: 3
+          maxLength: 64
+          pattern: ^[a-zA-Z0-9/_+=,.@-]+$
+    ScheduleDeletionResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ScheduleDeletionResult"
+      required:
+        - data
+    ScheduleDeletionResult:
+      type: object
+      properties:
+        keySetId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - PENDING_DELETION
+        deletionDate:
+          type: string
+          format: date-time
+      required:
+        - keySetId
+        - status
+        - deletionDate
+    SignResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/SignResult"
+      required:
+        - data
+    SignResult:
+      type: object
+      properties:
+        keySetId:
+          type: string
+          format: uuid
+        region:
+          $ref: "#/components/schemas/Region"
+        keyId:
+          type: string
+        signingAlgorithm:
+          type: string
+          enum:
+            - ECDSA_SHA_256
+        signature:
+          type: string
+          minLength: 1
+          format: byte
+          pattern: ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
+      required:
+        - keySetId
+        - region
+        - keyId
+        - signingAlgorithm
+        - signature
+    SignRequest:
+      type: object
+      properties:
+        region:
+          $ref: "#/components/schemas/Region"
+        message:
+          type: string
+          minLength: 1
+          format: byte
+          pattern: ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
+      required:
+        - region
+        - message
+    VerifyResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/VerifyResult"
+      required:
+        - data
+    VerifyResult:
+      type: object
+      properties:
+        keySetId:
+          type: string
+          format: uuid
+        region:
+          $ref: "#/components/schemas/Region"
+        keyId:
+          type: string
+        signingAlgorithm:
+          type: string
+          enum:
+            - ECDSA_SHA_256
+        valid:
+          type: boolean
+      required:
+        - keySetId
+        - region
+        - keyId
+        - signingAlgorithm
+        - valid
+    VerifyRequest:
+      type: object
+      properties:
+        region:
+          $ref: "#/components/schemas/Region"
+        message:
+          type: string
+          minLength: 1
+          format: byte
+          pattern: ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
+        signature:
+          type: string
+          minLength: 1
+          format: byte
+          pattern: ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
+      required:
+        - region
+        - message
+        - signature
+  parameters: {}
+paths:
+  /api/health:
+    get:
+      responses:
+        "200":
+          description: Health status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+        "500":
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /api/key-sets:
+    get:
+      responses:
+        "200":
+          description: Key set list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KeySetListResponse"
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateKeySet"
+      responses:
+        "201":
+          description: Created key set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KeySetResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "500":
+          description: Provider error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /api/key-sets/{keySetId}:
+    get:
+      parameters:
+        - schema:
+            type: string
+            format: uuid
+          required: true
+          name: keySetId
+          in: path
+      responses:
+        "200":
+          description: Key set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KeySetResponse"
+        "404":
+          description: Key set not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      parameters:
+        - schema:
+            type: string
+            format: uuid
+          required: true
+          name: keySetId
+          in: path
+      responses:
+        "200":
+          description: Deletion scheduled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScheduleDeletionResponse"
+        "404":
+          description: Key set not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /api/key-sets/{keySetId}/sign:
+    post:
+      parameters:
+        - schema:
+            type: string
+            format: uuid
+          required: true
+          name: keySetId
+          in: path
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignRequest"
+      responses:
+        "200":
+          description: Signature
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SignResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Key set not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Key set pending deletion
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /api/key-sets/{keySetId}/verify:
+    post:
+      parameters:
+        - schema:
+            type: string
+            format: uuid
+          required: true
+          name: keySetId
+          in: path
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyRequest"
+      responses:
+        "200":
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerifyResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Key set not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Key set pending deletion
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"

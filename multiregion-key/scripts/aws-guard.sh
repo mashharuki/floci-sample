@@ -48,7 +48,8 @@ pnpm test
 pnpm build
 cd pkgs/cdk
 pnpm exec cdk deploy -c target=aws --require-approval never --outputs-file cdk-outputs.json
-BUCKET="$(jq -r '.CdkStack.FrontendBucketNameOutput' cdk-outputs.json)"
-cd "$ROOT"
-VITE_API_BASE_URL="" pnpm --filter @full-stack-serverless/frontend build
-aws s3 sync pkgs/frontend/dist "s3://$BUCKET" --delete --region ap-northeast-1
+API_URL="$(jq -r '.CdkStack.ApiUrlOutput' cdk-outputs.json)"
+API_KEY_ID="$(jq -r '.CdkStack.ApiKeyIdOutput' cdk-outputs.json)"
+echo "AWS deploy complete"
+echo "API: $API_URL"
+echo "API key id: $API_KEY_ID"

@@ -2,24 +2,20 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { stringify } from "yaml";
 import { createApp } from "../src/app.js";
-import type { TodoRepository } from "../src/repositories/todo-repository.js";
-import { TodoService } from "../src/services/todo-service.js";
+import { LocalKmsProvider } from "../src/providers/local-kms-provider.js";
+import { InMemoryKeySetRepository } from "../src/repositories/key-set-repository.js";
+import { KmsKeyService } from "../src/services/kms-key-service.js";
 
-const repository: TodoRepository = {
-  list: async () => [],
-  get: async () => undefined,
-  create: async (todo) => todo,
-  update: async () => {
-    throw new Error("not called");
-  },
-  delete: async () => undefined,
-};
-
-const app = createApp({ todoService: new TodoService(repository) });
+const app = createApp({
+  keyService: new KmsKeyService(
+    new InMemoryKeySetRepository(),
+    new LocalKmsProvider(),
+  ),
+});
 const document = app.getOpenAPIDocument({
   openapi: "3.1.0",
   info: {
-    title: "Full Stack Serverless Todo API",
+    title: "Multi-Region KMS Key API",
     version: "1.0.0",
   },
 });
