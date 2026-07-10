@@ -13,6 +13,7 @@ flociについて学習するためのサンプル
 | `cdk/` | Floci 向けの基本 CDK サンプル。SQS と DynamoDB の学習用スタックを定義 |
 | `full-stack-serverless/` | 単一スタックで Todo アプリ全体を構築するフルスタックサーバーレス構成 |
 | `full-stack-serverless-blue-green/` | DynamoDB を共有し、Blue/Green のアプリ環境と CloudFront ルーターを分離した構成 |
+| `multiregion-key/` | マルチリージョンキーによる署名・検証を行う構成 |
 
 ## 技術スタック
 
