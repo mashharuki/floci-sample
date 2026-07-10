@@ -62,40 +62,86 @@ export class CdkStack extends cdk.Stack {
     table.grantReadWriteData(backend);
 
     if (isAws) {
+      const keyArns = [
+        `arn:aws:kms:${primaryAwsRegion}:${this.account}:key/*`,
+        `arn:aws:kms:${replicaAwsRegion}:${this.account}:key/*`,
+      ];
+      const aliasArns = [
+        `arn:aws:kms:${primaryAwsRegion}:${this.account}:alias/mrk-sample/*`,
+        `arn:aws:kms:${replicaAwsRegion}:${this.account}:alias/mrk-sample/*`,
+      ];
       backend.addToRolePolicy(
         new iam.PolicyStatement({
-          actions: ["kms:CreateKey"],
+          actions: ["kms:CreateKey", "kms:TagResource"],
           resources: ["*"],
           conditions: {
-            StringEquals: { "aws:RequestTag/App": "multiregion-key" },
+            StringEquals: {
+              "aws:RequestTag/App": "multiregion-key",
+              "kms:CallerAccount": this.account,
+            },
+            "ForAllValues:StringEquals": {
+              "aws:TagKeys": ["App", "KeySetId"],
+            },
+            Null: {
+              "aws:TagKeys": "false",
+            },
           },
         }),
       );
       backend.addToRolePolicy(
         new iam.PolicyStatement({
           actions: ["kms:CreateAlias"],
-          resources: ["*"],
+          resources: [...aliasArns, ...keyArns],
+          conditions: { StringEquals: { "kms:CallerAccount": this.account } },
+        }),
+      );
+      backend.addToRolePolicy(
+        new iam.PolicyStatement({
+          actions: ["kms:ReplicateKey"],
+          resources: [`arn:aws:kms:${primaryAwsRegion}:${this.account}:key/*`],
           conditions: {
-            StringLike: { "kms:RequestAlias": "alias/mrk-sample/*" },
+            StringEquals: {
+              "aws:ResourceTag/App": "multiregion-key",
+              "kms:CallerAccount": this.account,
+              "kms:ReplicaRegion": replicaAwsRegion,
+            },
           },
         }),
       );
       backend.addToRolePolicy(
         new iam.PolicyStatement({
+          actions: ["kms:PutKeyPolicy"],
+          resources: keyArns,
+          conditions: { StringEquals: { "kms:CallerAccount": this.account } },
+        }),
+      );
+      backend.addToRolePolicy(
+        new iam.PolicyStatement({
           actions: [
-            "kms:ReplicateKey",
             "kms:DescribeKey",
             "kms:ScheduleKeyDeletion",
             "kms:Sign",
             "kms:Verify",
           ],
-          resources: [
-            `arn:aws:kms:${primaryAwsRegion}:${this.account}:key/*`,
-            `arn:aws:kms:${replicaAwsRegion}:${this.account}:key/*`,
-          ],
+          resources: keyArns,
           conditions: {
-            "ForAnyValue:StringLike": {
-              "kms:ResourceAliases": "alias/mrk-sample/*",
+            StringEquals: {
+              "aws:ResourceTag/App": "multiregion-key",
+              "kms:CallerAccount": this.account,
+            },
+          },
+        }),
+      );
+      backend.addToRolePolicy(
+        new iam.PolicyStatement({
+          actions: ["iam:CreateServiceLinkedRole"],
+          resources: ["*"],
+          conditions: {
+            StringLike: {
+              "iam:AWSServiceName": [
+                "kms.amazonaws.com",
+                "*.kms.amazonaws.com",
+              ],
             },
           },
         }),

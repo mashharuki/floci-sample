@@ -1,9 +1,9 @@
-import { ScanCommand } from "@aws-sdk/client-dynamodb";
 import {
   DeleteCommand,
   type DynamoDBDocumentClient,
   GetCommand,
   PutCommand,
+  ScanCommand,
 } from "@aws-sdk/lib-dynamodb";
 import type { KeySet } from "@multiregion-key/shared";
 

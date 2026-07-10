@@ -100,9 +100,36 @@ test("AWS requires API keys and grants scoped KMS actions", () => {
     PolicyDocument: {
       Statement: Match.arrayWith([
         Match.objectLike({
-          Action: "kms:CreateKey",
+          Action: Match.arrayWith(["kms:CreateKey", "kms:TagResource"]),
           Condition: {
-            StringEquals: { "aws:RequestTag/App": "multiregion-key" },
+            StringEquals: Match.objectLike({
+              "aws:RequestTag/App": "multiregion-key",
+            }),
+            "ForAllValues:StringEquals": {
+              "aws:TagKeys": ["App", "KeySetId"],
+            },
+            Null: {
+              "aws:TagKeys": "false",
+            },
+          },
+        }),
+        Match.objectLike({
+          Action: "kms:CreateAlias",
+          Resource: Match.arrayWith([
+            "arn:aws:kms:ap-northeast-1:123456789012:alias/mrk-sample/*",
+            "arn:aws:kms:ap-northeast-3:123456789012:alias/mrk-sample/*",
+            "arn:aws:kms:ap-northeast-1:123456789012:key/*",
+            "arn:aws:kms:ap-northeast-3:123456789012:key/*",
+          ]),
+        }),
+        Match.objectLike({
+          Action: "kms:ReplicateKey",
+          Resource: "arn:aws:kms:ap-northeast-1:123456789012:key/*",
+          Condition: {
+            StringEquals: Match.objectLike({
+              "aws:ResourceTag/App": "multiregion-key",
+              "kms:ReplicaRegion": "ap-northeast-3",
+            }),
           },
         }),
         Match.objectLike({
@@ -111,6 +138,22 @@ test("AWS requires API keys and grants scoped KMS actions", () => {
             "arn:aws:kms:ap-northeast-1:123456789012:key/*",
             "arn:aws:kms:ap-northeast-3:123456789012:key/*",
           ]),
+          Condition: {
+            StringEquals: Match.objectLike({
+              "aws:ResourceTag/App": "multiregion-key",
+            }),
+          },
+        }),
+        Match.objectLike({
+          Action: "iam:CreateServiceLinkedRole",
+          Condition: {
+            StringLike: {
+              "iam:AWSServiceName": [
+                "kms.amazonaws.com",
+                "*.kms.amazonaws.com",
+              ],
+            },
+          },
         }),
       ]),
     },

@@ -1,0 +1,105 @@
+@flociApiId = b6b3e15151
+@stage = v1
+@flociBaseUrl = http://localhost:4566/restapis/{{flociApiId}}/{{stage}}/_user_request_
+
+@awsApiId = replace-with-aws-api-id
+@awsRegion = ap-northeast-1
+@awsBaseUrl = https://8n7ekyit3m.execute-api.ap-northeast-1.amazonaws.com/v1
+@awsApiKey = tIZm7ZbhFw9RyL4tKY1yu7xj1X6YoYx3aeUDrWRg
+
+@baseUrl = {{flociBaseUrl}}
+@apiKey = tIZm7ZbhFw9RyL4tKY1yu7xj1X6YoYx3aeUDrWRg
+@message = ZmxvY2kgc21va2U=
+@flociKeySetId = {{flociCreateKeySet.response.body.$.data.keySetId}}
+@flociSignature = {{flociSign.response.body.$.data.signature}}
+@awsKeySetId = {{awsCreateKeySet.response.body.$.data.keySetId}}
+@awsSignature = {{awsSign.response.body.$.data.signature}}
+
+### Floci: health
+GET {{flociBaseUrl}}/api/health
+
+### Floci: create key set
+# @name flociCreateKeySet
+POST {{flociBaseUrl}}/api/key-sets
+Content-Type: application/json
+
+{
+  "aliasName": "rest-client-floci"
+}
+
+### Floci: list key sets
+GET {{flociBaseUrl}}/api/key-sets
+
+### Floci: get key set
+GET {{flociBaseUrl}}/api/key-sets/{{flociKeySetId}}
+
+### Floci: sign in Tokyo
+# @name flociSign
+POST {{flociBaseUrl}}/api/key-sets/{{flociKeySetId}}/sign
+Content-Type: application/json
+
+{
+  "region": "tokyo",
+  "message": "{{message}}"
+}
+
+### Floci: verify in Osaka
+POST {{flociBaseUrl}}/api/key-sets/{{flociKeySetId}}/verify
+Content-Type: application/json
+
+{
+  "region": "osaka",
+  "message": "{{message}}",
+  "signature": "{{flociSignature}}"
+}
+
+### Floci: schedule deletion
+DELETE {{flociBaseUrl}}/api/key-sets/{{flociKeySetId}}
+
+### AWS: health
+GET {{awsBaseUrl}}/api/health
+x-api-key: {{awsApiKey}}
+
+### AWS: create key set
+# @name awsCreateKeySet
+POST {{awsBaseUrl}}/api/key-sets
+Content-Type: application/json
+x-api-key: {{awsApiKey}}
+
+{
+  "aliasName": "aws"
+}
+
+### AWS: list key sets
+GET {{awsBaseUrl}}/api/key-sets
+x-api-key: {{awsApiKey}}
+
+### AWS: get key set
+GET {{awsBaseUrl}}/api/key-sets/{{awsKeySetId}}
+x-api-key: {{awsApiKey}}
+
+### AWS: sign in Tokyo
+# @name awsSign
+POST {{awsBaseUrl}}/api/key-sets/{{awsKeySetId}}/sign
+Content-Type: application/json
+x-api-key: {{awsApiKey}}
+
+{
+  "region": "tokyo",
+  "message": "{{message}}"
+}
+
+### AWS: verify in Osaka
+POST {{awsBaseUrl}}/api/key-sets/{{awsKeySetId}}/verify
+Content-Type: application/json
+x-api-key: {{awsApiKey}}
+
+{
+  "region": "osaka",
+  "message": "{{message}}",
+  "signature": "{{awsSignature}}"
+}
+
+### AWS: schedule deletion
+DELETE {{awsBaseUrl}}/api/key-sets/{{awsKeySetId}}
+x-api-key: {{awsApiKey}}
