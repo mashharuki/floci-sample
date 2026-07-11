@@ -60,7 +60,12 @@ export class TodoBgAppStack extends cdk.Stack {
     new cdk.CfnOutput(this, "FrontendBucketNameOutput", {
       value: app.bucket.bucketName,
     });
-    new cdk.CfnOutput(this, "AppUrlOutput", { value: app.appUrl });
+    new cdk.CfnOutput(this, "AppUrlOutput", {
+      value:
+        props.target === "aws"
+          ? "Use TodoBgRouterStack.AppUrlOutput"
+          : app.appUrl,
+    });
     new cdk.CfnOutput(this, "DeploymentRegionOutput", {
       value: props.deploymentRegion,
     });

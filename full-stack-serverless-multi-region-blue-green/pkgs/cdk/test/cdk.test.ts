@@ -6,7 +6,13 @@ import { TodoBgRouterStack } from "../lib/stacks/todo-bg-router-stack";
 
 const account = "123456789012";
 
-function createDataStack(target: "floci" | "aws") {
+function createDataStack(
+  target: "floci" | "aws",
+  replicaRegions: Array<"ap-northeast-1" | "ap-northeast-3"> = [
+    "ap-northeast-1",
+    "ap-northeast-3",
+  ],
+) {
   const app = new App();
   const env = {
     account: target === "floci" ? "000000000000" : account,
@@ -15,6 +21,7 @@ function createDataStack(target: "floci" | "aws") {
   const dataStack = new TodoBgDataStack(app, "TodoBgDataStack", {
     target,
     env,
+    replicaRegions: target === "aws" ? [...replicaRegions] : undefined,
   });
   return { app, dataStack, env };
 }
@@ -48,6 +55,7 @@ test("AWS data stack creates a global table with the Osaka replica", () => {
   template.hasResourceProperties("AWS::DynamoDB::GlobalTable", {
     TableName: "Todos",
     BillingMode: "PAY_PER_REQUEST",
+    StreamSpecification: { StreamViewType: "NEW_AND_OLD_IMAGES" },
     Replicas: [{ Region: "ap-northeast-1" }, { Region: "ap-northeast-3" }],
   });
 });
@@ -58,6 +66,14 @@ test("Floci data stack creates a regular DynamoDB table", () => {
     TableName: "Todos",
     BillingMode: "PAY_PER_REQUEST",
   });
+});
+
+test("AWS data stack supports a primary-only global table creation phase", () => {
+  const { dataStack } = createDataStack("aws", ["ap-northeast-1"]);
+  Template.fromStack(dataStack).hasResourceProperties(
+    "AWS::DynamoDB::GlobalTable",
+    { Replicas: [{ Region: "ap-northeast-1" }] },
+  );
 });
 
 test("Floci app stack does not create the S3 auto-delete custom resource", () => {
@@ -128,6 +144,17 @@ test("router selects the requested regional API and frontend bucket", () => {
   });
   const template = Template.fromStack(routerStack);
   template.resourceCountIs("AWS::CloudFront::Distribution", 1);
+  expect(JSON.stringify(template.toJSON())).toContain(
+    "todo-osaka-green.s3.ap-northeast-3.",
+  );
   template.hasOutput("ActiveColorOutput", { Value: "green" });
   template.hasOutput("ActiveRegionOutput", { Value: "ap-northeast-3" });
+  template.hasOutput("DistributionIdOutput", {});
+});
+
+test("AWS app stack directs users to the RouterStack URL", () => {
+  const { appStack } = createAppStack("aws", "ap-northeast-1", "blue");
+  Template.fromStack(appStack).hasOutput("AppUrlOutput", {
+    Value: "Use TodoBgRouterStack.AppUrlOutput",
+  });
 });

@@ -23,6 +23,10 @@ const activeRegion = app.node.tryGetContext("activeRegion") ?? "tokyo";
 if (!isDeploymentRegionName(activeRegion)) {
   throw new Error("CDK context activeRegion must be 'tokyo' or 'osaka'");
 }
+const globalTablePhase = app.node.tryGetContext("globalTablePhase") ?? "all";
+if (globalTablePhase !== "primary" && globalTablePhase !== "all") {
+  throw new Error("CDK context globalTablePhase must be 'primary' or 'all'");
+}
 
 const account =
   target === "floci" ? "000000000000" : process.env.CDK_DEFAULT_ACCOUNT;
@@ -31,6 +35,10 @@ const tokyoEnv = { account, region: deploymentRegions.tokyo };
 const dataStack = new TodoBgDataStack(app, "TodoBgDataStack", {
   target,
   env: target === "floci" ? localEnv : tokyoEnv,
+  replicaRegions:
+    target === "aws" && globalTablePhase === "primary"
+      ? [deploymentRegions.tokyo]
+      : Object.values(deploymentRegions),
 });
 
 for (const [regionName, deploymentRegion] of Object.entries(

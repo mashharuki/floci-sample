@@ -54,6 +54,10 @@ ACTIVE_REGION=tokyo ACTIVE_COLOR=blue CONFIRM_AWS_DEPLOY=yes pnpm deploy:aws
 
 ACTIVE_REGION=osaka ACTIVE_COLOR=green CONFIRM_AWS_DEPLOY=yes \
   bash scripts/aws-guard.sh switch
+
+# 東京リージョンに戻す
+ACTIVE_REGION=tokyo ACTIVE_COLOR=green CONFIRM_AWS_DEPLOY=yes \
+  bash scripts/aws-guard.sh switch
 ```
 
 切替前に対象 API の health を確認し、失敗時は CloudFront を更新しません。destroy はルーター、4アプリ、グローバルテーブルの順で削除し、Todo データも削除します。

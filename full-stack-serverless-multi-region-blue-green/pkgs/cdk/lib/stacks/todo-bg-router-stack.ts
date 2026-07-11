@@ -28,10 +28,14 @@ export class TodoBgRouterStack extends cdk.Stack {
     );
 
     const apiUrl = new URL(props.activeApiUrl);
-    const bucket = s3.Bucket.fromBucketName(
+    const bucket = s3.Bucket.fromBucketAttributes(
       this,
       "ActiveFrontendBucket",
-      props.activeBucketName,
+      {
+        bucketName: props.activeBucketName,
+        bucketRegionalDomainName: `${props.activeBucketName}.s3.${props.activeDeploymentRegion}.${cdk.Stack.of(this).urlSuffix}`,
+        region: props.activeDeploymentRegion,
+      },
     );
     const originAccessControl = new cloudfront.S3OriginAccessControl(
       this,
@@ -78,6 +82,9 @@ export class TodoBgRouterStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, "DistributionDomainOutput", {
       value: distribution.distributionDomainName,
+    });
+    new cdk.CfnOutput(this, "DistributionIdOutput", {
+      value: distribution.distributionId,
     });
     new cdk.CfnOutput(this, "AppUrlOutput", {
       value: `https://${distribution.distributionDomainName}`,

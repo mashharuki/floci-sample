@@ -35,7 +35,7 @@ stack_output() {
     --query "Stacks[0].Outputs[?OutputKey=='$key'].OutputValue | [0]" --output text
 }
 deploy_router() {
-  local stack region api_url bucket
+  local stack region api_url bucket distribution_id invalidation_id
   region="$(region_code "$ACTIVE_REGION")"
   stack="$(stack_name "$ACTIVE_REGION" "$ACTIVE_COLOR")"
   api_url="$(stack_output "$stack" "$region" ApiUrlOutput)"
@@ -45,6 +45,12 @@ deploy_router() {
     -c target=aws -c activeRegion="$ACTIVE_REGION" -c activeColor="$ACTIVE_COLOR" \
     -c activeApiUrl="$api_url" -c activeBucketName="$bucket" \
     --require-approval never --exclusively
+  distribution_id="$(stack_output TodoBgRouterStack "$TOKYO_REGION" DistributionIdOutput)"
+  invalidation_id="$(aws cloudfront create-invalidation --distribution-id "$distribution_id" \
+    --paths '/*' --query 'Invalidation.Id' --output text)"
+  aws cloudfront wait invalidation-completed \
+    --distribution-id "$distribution_id" --id "$invalidation_id"
+  echo "CloudFront App URL: $(stack_output TodoBgRouterStack "$TOKYO_REGION" AppUrlOutput)"
 }
 
 case "$ACTION" in
@@ -59,7 +65,12 @@ case "$ACTION" in
     for region in "$TOKYO_REGION" "$OSAKA_REGION"; do
       CDK_DEFAULT_ACCOUNT="$AWS_ACCOUNT_ID" pnpm --filter @fsbg/cdk exec -- cdk bootstrap "aws://$AWS_ACCOUNT_ID/$region"
     done
-    CDK_DEFAULT_ACCOUNT="$AWS_ACCOUNT_ID" pnpm --filter @fsbg/cdk exec -- cdk deploy TodoBgDataStack -c target=aws --require-approval never --exclusively
+    # GlobalTable は初回作成でプライマリ以外のレプリカを同時追加できない。
+    # 東京プライマリを作成後、2回目のスタック更新で大阪レプリカを追加する。
+    CDK_DEFAULT_ACCOUNT="$AWS_ACCOUNT_ID" pnpm --filter @fsbg/cdk exec -- cdk deploy TodoBgDataStack \
+      -c target=aws -c globalTablePhase=primary --require-approval never --exclusively
+    CDK_DEFAULT_ACCOUNT="$AWS_ACCOUNT_ID" pnpm --filter @fsbg/cdk exec -- cdk deploy TodoBgDataStack \
+      -c target=aws -c globalTablePhase=all --require-approval never --exclusively
     for region in tokyo osaka; do
       for color in blue green; do
         CDK_DEFAULT_ACCOUNT="$AWS_ACCOUNT_ID" pnpm --filter @fsbg/cdk exec -- cdk deploy "$(stack_name "$region" "$color")" -c target=aws --require-approval never --exclusively

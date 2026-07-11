@@ -3,7 +3,7 @@ import { join } from "node:path";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as cdk from "aws-cdk-lib/core";
 import type { Construct } from "constructs";
-import { deploymentRegions } from "../regions";
+import type { DeploymentRegion } from "../regions";
 
 interface TodoTableDefinition {
   TableName: string;
@@ -17,6 +17,7 @@ const definition = JSON.parse(
 
 export interface TodoBgDataStackProps extends cdk.StackProps {
   target: "floci" | "aws";
+  replicaRegions?: DeploymentRegion[];
 }
 
 /** DynamoDB を管理する共有データスタック。 */
@@ -40,7 +41,10 @@ export class TodoBgDataStack extends cdk.Stack {
           keyType: KeyType,
         })),
         billingMode: "PAY_PER_REQUEST",
-        replicas: Object.values(deploymentRegions).map((region) => ({
+        streamSpecification: {
+          streamViewType: "NEW_AND_OLD_IMAGES",
+        },
+        replicas: (props.replicaRegions ?? []).map((region) => ({
           region,
         })),
       }).applyRemovalPolicy(cdk.RemovalPolicy.DESTROY);
