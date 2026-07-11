@@ -29,6 +29,7 @@ function unwrap<T>(data: T | undefined, error: unknown): T {
 export async function getHealth(): Promise<{
   status: "ok";
   color: "blue" | "green";
+  region: "ap-northeast-1" | "ap-northeast-3";
 }> {
   const { data, error } = await client.GET("/api/health");
   return unwrap(data, error).data;

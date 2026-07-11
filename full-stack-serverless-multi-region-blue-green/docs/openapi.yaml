@@ -19,9 +19,15 @@ components:
               enum:
                 - blue
                 - green
+            region:
+              type: string
+              enum:
+                - ap-northeast-1
+                - ap-northeast-3
           required:
             - status
             - color
+            - region
       required:
         - data
     ApiError:

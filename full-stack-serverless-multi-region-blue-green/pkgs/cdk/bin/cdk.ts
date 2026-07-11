@@ -1,53 +1,72 @@
 #!/usr/bin/env node
 import * as cdk from "aws-cdk-lib/core";
+import {
+  type AppColor,
+  deploymentRegions,
+  isDeploymentRegionName,
+} from "../lib/regions";
 import { TodoBgAppStack } from "../lib/stacks/todo-bg-app-stack";
 import { TodoBgDataStack } from "../lib/stacks/todo-bg-data-stack";
 import { TodoBgRouterStack } from "../lib/stacks/todo-bg-router-stack";
 
 const app = new cdk.App();
-
 const target = app.node.tryGetContext("target") ?? "floci";
 if (target !== "floci" && target !== "aws") {
   throw new Error("CDK context target must be 'floci' or 'aws'");
 }
 
-const active = app.node.tryGetContext("active") ?? "blue";
-if (active !== "blue" && active !== "green") {
-  throw new Error("CDK context active must be 'blue' or 'green'");
+const activeColor = app.node.tryGetContext("activeColor") ?? "blue";
+if (activeColor !== "blue" && activeColor !== "green") {
+  throw new Error("CDK context activeColor must be 'blue' or 'green'");
+}
+const activeRegion = app.node.tryGetContext("activeRegion") ?? "tokyo";
+if (!isDeploymentRegionName(activeRegion)) {
+  throw new Error("CDK context activeRegion must be 'tokyo' or 'osaka'");
 }
 
-const env =
-  target === "floci"
-    ? { account: "000000000000", region: "us-east-1" }
-    : { account: process.env.CDK_DEFAULT_ACCOUNT, region: "ap-northeast-1" };
-
-const dataStack = new TodoBgDataStack(app, "TodoBgDataStack", { target, env });
-
-const blueStack = new TodoBgAppStack(app, "TodoBgBlueStack", {
-  color: "blue",
-  table: dataStack.table,
+const account =
+  target === "floci" ? "000000000000" : process.env.CDK_DEFAULT_ACCOUNT;
+const localEnv = { account, region: "us-east-1" };
+const tokyoEnv = { account, region: deploymentRegions.tokyo };
+const dataStack = new TodoBgDataStack(app, "TodoBgDataStack", {
   target,
-  env,
+  env: target === "floci" ? localEnv : tokyoEnv,
 });
-blueStack.addDependency(dataStack);
 
-const greenStack = new TodoBgAppStack(app, "TodoBgGreenStack", {
-  color: "green",
-  table: dataStack.table,
-  target,
-  env,
-});
-greenStack.addDependency(dataStack);
+for (const [regionName, deploymentRegion] of Object.entries(
+  deploymentRegions,
+)) {
+  for (const color of ["blue", "green"] as const) {
+    const regionCapitalized = regionName[0].toUpperCase() + regionName.slice(1);
+    const colorCapitalized = color[0].toUpperCase() + color.slice(1);
+    const appStack = new TodoBgAppStack(
+      app,
+      `TodoBg${regionCapitalized}${colorCapitalized}Stack`,
+      {
+        color,
+        deploymentRegion,
+        tableName: dataStack.tableName,
+        target,
+        env:
+          target === "floci" ? localEnv : { account, region: deploymentRegion },
+      },
+    );
+    appStack.addDependency(dataStack);
+  }
+}
 
 if (target === "aws") {
-  const routerStack = new TodoBgRouterStack(app, "TodoBgRouterStack", {
-    active,
-    blueApi: blueStack.api,
-    greenApi: greenStack.api,
-    blueBucket: blueStack.bucket,
-    greenBucket: greenStack.bucket,
-    env,
+  const activeApiUrl =
+    app.node.tryGetContext("activeApiUrl") ??
+    "https://example.execute-api.ap-northeast-1.amazonaws.com/v1/";
+  const activeBucketName =
+    app.node.tryGetContext("activeBucketName") ?? "placeholder-bucket";
+  new TodoBgRouterStack(app, "TodoBgRouterStack", {
+    activeColor: activeColor as AppColor,
+    activeRegion,
+    activeDeploymentRegion: deploymentRegions[activeRegion],
+    activeApiUrl,
+    activeBucketName,
+    env: tokyoEnv,
   });
-  routerStack.addDependency(blueStack);
-  routerStack.addDependency(greenStack);
 }

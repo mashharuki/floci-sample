@@ -35,6 +35,7 @@ export default function App() {
     staleTime: Number.POSITIVE_INFINITY,
   });
   const appColor = healthQuery.data?.color ?? "blue";
+  const appRegion = healthQuery.data?.region ?? "ap-northeast-1";
   const todosQuery = useQuery({ queryKey: todosKey, queryFn: listTodos });
   const todos = todosQuery.data ?? [];
 
@@ -148,8 +149,11 @@ export default function App() {
           <p className="eyebrow">DAILY REGISTER / {new Date().getFullYear()}</p>
           <h1>今日の余白</h1>
           <p className="lede">やることを記し、終えたものには静かに線を引く。</p>
-          <span className="env-badge" aria-label={`環境: ${appColor}`}>
-            {appColor.toUpperCase()}
+          <span
+            className="env-badge"
+            aria-label={`環境: ${appColor}, リージョン: ${appRegion}`}
+          >
+            {appColor.toUpperCase()} / {appRegion}
           </span>
         </div>
         <div className="count-block" aria-label={`未完了 ${remaining}件`}>

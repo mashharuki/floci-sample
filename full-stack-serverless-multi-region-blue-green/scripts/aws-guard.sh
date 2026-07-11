@@ -2,101 +2,91 @@
 set -euo pipefail
 
 ACTION="${1:-}"
-ACTIVE="${ACTIVE:-blue}"
+ACTIVE_REGION="${ACTIVE_REGION:-tokyo}"
+ACTIVE_COLOR="${ACTIVE_COLOR:-blue}"
+TOKYO_REGION="ap-northeast-1"
+OSAKA_REGION="ap-northeast-3"
 
 if [[ "${CONFIRM_AWS_DEPLOY:-}" != "yes" ]]; then
   echo "Set CONFIRM_AWS_DEPLOY=yes to allow AWS operations." >&2
   exit 1
 fi
+if [[ ! "$ACTIVE_REGION" =~ ^(tokyo|osaka)$ || ! "$ACTIVE_COLOR" =~ ^(blue|green)$ ]]; then
+  echo "ACTIVE_REGION must be tokyo|osaka and ACTIVE_COLOR must be blue|green." >&2
+  exit 1
+fi
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+AWS_ACCOUNT_ID="${AWS_ACCOUNT_ID:-$(aws sts get-caller-identity --query Account --output text)}"
 
-# AWS_ACCOUNT_ID が未指定なら STS から自動取得
-if [[ -z "${AWS_ACCOUNT_ID:-}" ]]; then
-  AWS_ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
-  echo "AWS_ACCOUNT_ID (auto-detected): $AWS_ACCOUNT_ID"
-fi
+region_code() {
+  [[ "$1" == "tokyo" ]] && echo "$TOKYO_REGION" || echo "$OSAKA_REGION"
+}
+stack_name() {
+  local region_name color_name
+  case "$1" in tokyo) region_name="Tokyo" ;; osaka) region_name="Osaka" ;; esac
+  case "$2" in blue) color_name="Blue" ;; green) color_name="Green" ;; esac
+  printf 'TodoBg%s%sStack' "$region_name" "$color_name"
+}
+stack_output() {
+  local stack="$1" region="$2" key="$3"
+  aws cloudformation describe-stacks --stack-name "$stack" --region "$region" \
+    --query "Stacks[0].Outputs[?OutputKey=='$key'].OutputValue | [0]" --output text
+}
+deploy_router() {
+  local stack region api_url bucket
+  region="$(region_code "$ACTIVE_REGION")"
+  stack="$(stack_name "$ACTIVE_REGION" "$ACTIVE_COLOR")"
+  api_url="$(stack_output "$stack" "$region" ApiUrlOutput)"
+  bucket="$(stack_output "$stack" "$region" FrontendBucketNameOutput)"
+  curl -fsS "${api_url}api/health" >/dev/null
+  CDK_DEFAULT_ACCOUNT="$AWS_ACCOUNT_ID" pnpm --filter @fsbg/cdk exec -- cdk deploy TodoBgRouterStack \
+    -c target=aws -c activeRegion="$ACTIVE_REGION" -c activeColor="$ACTIVE_COLOR" \
+    -c activeApiUrl="$api_url" -c activeBucketName="$bucket" \
+    --require-approval never --exclusively
+}
 
 case "$ACTION" in
   diff)
-    pnpm --filter @fsbg/cdk diff:aws
+    CDK_DEFAULT_ACCOUNT="$AWS_ACCOUNT_ID" pnpm --filter @fsbg/cdk exec -- cdk diff --all -c target=aws
     ;;
   deploy)
     pnpm generate
     pnpm format:check
     pnpm typecheck
     pnpm test
-
-    CDK_DEFAULT_ACCOUNT="$AWS_ACCOUNT_ID" \
-      pnpm --filter @fsbg/cdk exec -- cdk deploy --all \
-        -c target=aws -c active="$ACTIVE" \
-        --require-approval never \
-        --outputs-file cdk-outputs.json
-
-    BLUE_BUCKET=$(jq -r '.TodoBgBlueStack.FrontendBucketNameOutput' pkgs/cdk/cdk-outputs.json)
-    GREEN_BUCKET=$(jq -r '.TodoBgGreenStack.FrontendBucketNameOutput' pkgs/cdk/cdk-outputs.json)
-
-    # AWS: CloudFront が /api/* をルーティングするため VITE_API_BASE_URL="" でビルド可
+    for region in "$TOKYO_REGION" "$OSAKA_REGION"; do
+      CDK_DEFAULT_ACCOUNT="$AWS_ACCOUNT_ID" pnpm --filter @fsbg/cdk exec -- cdk bootstrap "aws://$AWS_ACCOUNT_ID/$region"
+    done
+    CDK_DEFAULT_ACCOUNT="$AWS_ACCOUNT_ID" pnpm --filter @fsbg/cdk exec -- cdk deploy TodoBgDataStack -c target=aws --require-approval never --exclusively
+    for region in tokyo osaka; do
+      for color in blue green; do
+        CDK_DEFAULT_ACCOUNT="$AWS_ACCOUNT_ID" pnpm --filter @fsbg/cdk exec -- cdk deploy "$(stack_name "$region" "$color")" -c target=aws --require-approval never --exclusively
+      done
+    done
     pnpm --filter frontend build
-    aws s3 sync pkgs/frontend/dist "s3://$BLUE_BUCKET" --delete
-    aws s3 sync pkgs/frontend/dist "s3://$GREEN_BUCKET" --delete
+    for region in tokyo osaka; do
+      region_id="$(region_code "$region")"
+      for color in blue green; do
+        bucket="$(stack_output "$(stack_name "$region" "$color")" "$region_id" FrontendBucketNameOutput)"
+        aws s3 sync pkgs/frontend/dist "s3://$bucket" --delete --region "$region_id"
+      done
+    done
+    deploy_router
     ;;
   switch)
-    echo "=== Switching active color to: $ACTIVE ==="
-
-    # アクティブ側スタックをアップデートして cross-stack export を確保する。
-    # RouterStack は両色の API を常に参照するため、対象色の restApiId export が
-    # 存在しない場合（初回切り替え直後など）にここで追加される。
-    if [[ "$ACTIVE" == "green" ]]; then
-      TARGET_STACK="TodoBgGreenStack"
-    else
-      TARGET_STACK="TodoBgBlueStack"
-    fi
-    CDK_DEFAULT_ACCOUNT="$AWS_ACCOUNT_ID" \
-      pnpm --filter @fsbg/cdk exec -- cdk deploy "$TARGET_STACK" \
-        -c target=aws -c active="$ACTIVE" \
-        --require-approval never \
-        --exclusively
-
-    # RouterStack だけを切り替える。--exclusively で依存スタックを再デプロイしない。
-    CDK_DEFAULT_ACCOUNT="$AWS_ACCOUNT_ID" \
-      pnpm --filter @fsbg/cdk exec -- cdk deploy TodoBgRouterStack \
-        -c target=aws -c active="$ACTIVE" \
-        --require-approval never \
-        --exclusively
-
-    echo "=== Done. Active color: $ACTIVE ==="
+    deploy_router
+    echo "Active AWS target: $ACTIVE_REGION / $ACTIVE_COLOR"
     ;;
   destroy)
-    # RouterStack を先に削除する。
-    # RouterStack の BucketPolicy リソースと AppStack の BucketPolicy が同一バケットに
-    # 存在する場合、CloudFormation が "Last applied policy" エラーで削除できないため
-    # --retain-resources で問題リソースを skip してから RouterStack を削除する。
-    ROUTER_STATUS=$(aws cloudformation describe-stacks \
-      --stack-name TodoBgRouterStack --region ap-northeast-1 \
-      --query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo "NOT_FOUND")
-    if [[ "$ROUTER_STATUS" != "NOT_FOUND" && "$ROUTER_STATUS" != "DELETE_COMPLETE" ]]; then
-      echo "=== Deleting TodoBgRouterStack (status: $ROUTER_STATUS) ==="
-      if [[ "$ROUTER_STATUS" == "DELETE_FAILED" ]]; then
-        # --retain-resources は DELETE_FAILED 状態のときのみ指定可能
-        aws cloudformation delete-stack \
-          --stack-name TodoBgRouterStack \
-          --retain-resources BlueBucketPolicy GreenBucketPolicy \
-          --region ap-northeast-1
-      else
-        aws cloudformation delete-stack \
-          --stack-name TodoBgRouterStack \
-          --region ap-northeast-1
-      fi
-      aws cloudformation wait stack-delete-complete \
-        --stack-name TodoBgRouterStack \
-        --region ap-northeast-1
-      echo "=== TodoBgRouterStack deleted ==="
-    fi
-    CDK_DEFAULT_ACCOUNT="$AWS_ACCOUNT_ID" \
-      pnpm --filter @fsbg/cdk exec -- cdk destroy --all \
-        -c target=aws --force
+    CDK_DEFAULT_ACCOUNT="$AWS_ACCOUNT_ID" pnpm --filter @fsbg/cdk exec -- cdk destroy TodoBgRouterStack -c target=aws --force --exclusively || true
+    for region in tokyo osaka; do
+      for color in blue green; do
+        CDK_DEFAULT_ACCOUNT="$AWS_ACCOUNT_ID" pnpm --filter @fsbg/cdk exec -- cdk destroy "$(stack_name "$region" "$color")" -c target=aws --force --exclusively
+      done
+    done
+    CDK_DEFAULT_ACCOUNT="$AWS_ACCOUNT_ID" pnpm --filter @fsbg/cdk exec -- cdk destroy TodoBgDataStack -c target=aws --force --exclusively
     ;;
   *)
     echo "Usage: $0 diff|deploy|switch|destroy" >&2

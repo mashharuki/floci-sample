@@ -45,11 +45,17 @@ describe("Todo API", () => {
         () => new Date("2026-01-02T00:00:00.000Z"),
         () => todo.id,
       ),
+      color: "green",
+      region: "ap-northeast-3",
     });
   });
 
   test("serves health and all CRUD endpoints", async () => {
-    expect((await app.request("/api/health")).status).toBe(200);
+    const healthResponse = await app.request("/api/health");
+    expect(healthResponse.status).toBe(200);
+    expect(await healthResponse.json()).toMatchObject({
+      data: { color: "green", region: "ap-northeast-3" },
+    });
     expect((await app.request("/api/todos")).status).toBe(200);
     expect((await app.request(`/api/todos/${todo.id}`)).status).toBe(200);
 
@@ -75,6 +81,14 @@ describe("Todo API", () => {
     expect(
       (await app.request(`/api/todos/${todo.id}`, { method: "DELETE" })).status,
     ).toBe(204);
+  });
+
+  test("allows the Floci frontend origin to call the API", async () => {
+    const response = await app.request("/api/health", {
+      headers: { origin: "http://localhost:4566" },
+    });
+
+    expect(response.headers.get("access-control-allow-origin")).toBe("*");
   });
 
   test("returns validation errors for invalid JSON, schemas, and empty patch", async () => {

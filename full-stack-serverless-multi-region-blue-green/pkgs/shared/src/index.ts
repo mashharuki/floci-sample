@@ -65,6 +65,7 @@ export const HealthResponseSchema = z
     data: z.object({
       status: z.literal("ok"),
       color: z.enum(["blue", "green"]),
+      region: z.enum(["ap-northeast-1", "ap-northeast-3"]),
     }),
   })
   .openapi("HealthResponse");

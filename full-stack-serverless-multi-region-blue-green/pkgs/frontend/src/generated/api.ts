@@ -251,6 +251,8 @@ export interface components {
         status: "ok";
         /** @enum {string} */
         color: "blue" | "green";
+        /** @enum {string} */
+        region: "ap-northeast-1" | "ap-northeast-3";
       };
     };
     ApiError: {

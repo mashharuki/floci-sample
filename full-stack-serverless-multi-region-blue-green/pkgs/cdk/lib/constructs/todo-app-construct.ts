@@ -1,6 +1,5 @@
 import { join } from "node:path";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
-import type * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as lambdaNodejs from "aws-cdk-lib/aws-lambda-nodejs";
@@ -8,10 +7,12 @@ import * as logs from "aws-cdk-lib/aws-logs";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as cdk from "aws-cdk-lib/core";
 import { Construct } from "constructs";
+import type { AppColor, DeploymentRegion } from "../regions";
 
 export interface TodoAppConstructProps {
-  color: "blue" | "green";
-  table: dynamodb.ITable;
+  color: AppColor;
+  deploymentRegion: DeploymentRegion;
+  tableName: string;
   target: "floci" | "aws";
 }
 
@@ -36,7 +37,7 @@ export class TodoAppConstruct extends Construct {
    */
   constructor(scope: Construct, id: string, props: TodoAppConstructProps) {
     super(scope, id);
-    const { color, table, target } = props;
+    const { color, deploymentRegion, tableName, target } = props;
     const isAws = target === "aws";
     const colorCap = color[0].toUpperCase() + color.slice(1);
 
@@ -48,7 +49,11 @@ export class TodoAppConstruct extends Construct {
         entry: join(__dirname, "../../../backend/src/lambda.ts"),
         runtime: lambda.Runtime.NODEJS_24_X,
         handler: "handler",
-        environment: { TODO_TABLE_NAME: table.tableName, APP_COLOR: color },
+        environment: {
+          TODO_TABLE_NAME: tableName,
+          APP_COLOR: color,
+          APP_REGION: deploymentRegion,
+        },
         bundling: { minify: true, sourceMap: true },
         logGroup: isAws
           ? new logs.LogGroup(this, `TodoFunctionLogs${colorCap}`, {
@@ -58,7 +63,24 @@ export class TodoAppConstruct extends Construct {
           : undefined,
       },
     );
-    table.grantReadWriteData(fn);
+    fn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: [
+          "dynamodb:DeleteItem",
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:Scan",
+          "dynamodb:UpdateItem",
+        ],
+        resources: [
+          cdk.Stack.of(this).formatArn({
+            service: "dynamodb",
+            resource: "table",
+            resourceName: tableName,
+          }),
+        ],
+      }),
+    );
 
     // API Gateway
     this.api = new apigateway.RestApi(this, `TodoApi${colorCap}`, {
@@ -86,7 +108,9 @@ export class TodoAppConstruct extends Construct {
             restrictPublicBuckets: false,
           }),
       publicReadAccess: !isAws,
-      autoDeleteObjects: true,
+      // Floci の Custom Resource Lambda はローカル S3 エンドポイントを解決できない。
+      // ローカルでは destroy.sh が先にバケットを空にする。
+      autoDeleteObjects: isAws,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 

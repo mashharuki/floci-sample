@@ -7,6 +7,7 @@ import {
   errorResponse,
 } from "@fsbg/shared";
 import { OpenAPIHono, createRoute } from "@hono/zod-openapi";
+import { cors } from "hono/cors";
 import {
   DynamoTodoRepository,
   TodoConflictError,
@@ -24,6 +25,7 @@ import { TodoService } from "./services/todo-service.js";
 export interface AppDependencies {
   todoService: TodoService;
   color?: "blue" | "green";
+  region?: "ap-northeast-1" | "ap-northeast-3";
 }
 
 const healthRoute = createRoute({
@@ -85,6 +87,9 @@ export function createApp(dependencies: AppDependencies) {
     },
   });
 
+  // Floci では S3 静的サイトと API Gateway が別オリジンになる。
+  // AWS では CloudFront 配下の同一オリジンでも、この許可は互換性を保つ。
+  app.use("/api/*", cors());
   app.use("*", async (c, next) => {
     const startedAt = performance.now();
     const requestId = c.req.header("x-request-id") ?? randomUUID();
@@ -103,7 +108,13 @@ export function createApp(dependencies: AppDependencies) {
 
   app.openapi(healthRoute, (c) =>
     c.json(
-      { data: { status: "ok" as const, color: dependencies.color ?? "blue" } },
+      {
+        data: {
+          status: "ok" as const,
+          color: dependencies.color ?? "blue",
+          region: dependencies.region ?? "ap-northeast-1",
+        },
+      },
       200,
     ),
   );
@@ -148,10 +159,14 @@ export function createDefaultApp() {
     throw new Error("TODO_TABLE_NAME is required");
   }
   const color = (process.env.APP_COLOR ?? "blue") as "blue" | "green";
+  const region = (process.env.APP_REGION ?? "ap-northeast-1") as
+    | "ap-northeast-1"
+    | "ap-northeast-3";
   const client = DynamoDBDocumentClient.from(new DynamoDBClient({}));
   return createApp({
     todoService: new TodoService(new DynamoTodoRepository(client, tableName)),
     color,
+    region,
   });
 }
 

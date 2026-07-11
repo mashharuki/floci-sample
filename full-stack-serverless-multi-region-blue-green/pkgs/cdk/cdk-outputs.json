@@ -1,29 +1,41 @@
 {
   "TodoBgDataStack": {
-    "ExportsOutputRefTodoTable585F1D6BBAE41B2C": "Todos",
-    "TodoTableNameOutput": "Todos",
-    "ExportsOutputFnGetAttTodoTable585F1D6BArn557654A3": "arn:aws:dynamodb:ap-northeast-1:796032104877:table/Todos"
+    "TodoTableNameOutput": "Todos"
   },
-  "TodoBgBlueStack": {
-    "FrontendBucketNameOutput": "todobgbluestack-todoappbluefrontendbucketblue5b36d-bsn3wtqjgzma",
-    "ExportsOutputRefTodoAppBlueFrontendBucketBlue5B36D6B500046F49": "todobgbluestack-todoappbluefrontendbucketblue5b36d-bsn3wtqjgzma",
-    "ApiUrlOutput": "https://hdeo7ti501.execute-api.ap-northeast-1.amazonaws.com/v1/",
-    "ApiIdOutput": "hdeo7ti501",
-    "ExportsOutputRefTodoAppBlueTodoApiBlueADD4F7E7380D6041": "hdeo7ti501",
-    "TodoAppBlueTodoApiBlueEndpointB629ACD0": "https://hdeo7ti501.execute-api.ap-northeast-1.amazonaws.com/v1/",
-    "ExportsOutputRefTodoAppBlueTodoApiBlueDeploymentStagev1A7534C3061A2F753": "v1",
-    "AppUrlOutput": "http://localhost:4566/todobgbluestack-todoappbluefrontendbucketblue5b36d-bsn3wtqjgzma/index.html"
+  "TodoBgTokyoBlueStack": {
+    "TodoAppTokyoBlueTodoApiBlueEndpoint8E3DF335": "https://2068cd565d.execute-api.us-east-1.amazonaws.com/v1/",
+    "ApiIdOutput": "2068cd565d",
+    "ApiUrlOutput": "http://localhost:4566/restapis/2068cd565d/v1/_user_request_",
+    "FrontendBucketNameOutput": "todobgtokyobluestack-todoapptokyobluefrontendbucketblued4987c6d",
+    "AppUrlOutput": "http://localhost:4566/todobgtokyobluestack-todoapptokyobluefrontendbucketblued4987c6d/index.html",
+    "DeploymentRegionOutput": "ap-northeast-1",
+    "ColorOutput": "blue"
   },
-  "TodoBgGreenStack": {
-    "TodoAppGreenTodoApiGreenEndpoint58BF2B79": "https://kq6fia9clf.execute-api.ap-northeast-1.amazonaws.com/v1/",
-    "FrontendBucketNameOutput": "todobggreenstack-todoappgreenfrontendbucketgreen6e-fwc5mnnveqif",
-    "ApiUrlOutput": "https://kq6fia9clf.execute-api.ap-northeast-1.amazonaws.com/v1/",
-    "ApiIdOutput": "kq6fia9clf",
-    "AppUrlOutput": "http://localhost:4566/todobggreenstack-todoappgreenfrontendbucketgreen6e-fwc5mnnveqif/index.html"
+  "TodoBgTokyoGreenStack": {
+    "TodoAppTokyoGreenTodoApiGreenEndpointF467BF6D": "https://0a813c3687.execute-api.us-east-1.amazonaws.com/v1/",
+    "ApiIdOutput": "0a813c3687",
+    "ApiUrlOutput": "http://localhost:4566/restapis/0a813c3687/v1/_user_request_",
+    "FrontendBucketNameOutput": "todobgtokyogreenstack-todoapptokyogreenfrontendbucketgreen2e9c8",
+    "AppUrlOutput": "http://localhost:4566/todobgtokyogreenstack-todoapptokyogreenfrontendbucketgreen2e9c8/index.html",
+    "DeploymentRegionOutput": "ap-northeast-1",
+    "ColorOutput": "green"
   },
-  "TodoBgRouterStack": {
-    "DistributionDomainOutput": "dsqtm6uew0c7y.cloudfront.net",
-    "ActiveColorOutput": "blue",
-    "AppUrlOutput": "https://dsqtm6uew0c7y.cloudfront.net"
+  "TodoBgOsakaBlueStack": {
+    "TodoAppOsakaBlueTodoApiBlueEndpoint62D3A910": "https://c5b8399567.execute-api.us-east-1.amazonaws.com/v1/",
+    "ApiIdOutput": "c5b8399567",
+    "ApiUrlOutput": "http://localhost:4566/restapis/c5b8399567/v1/_user_request_",
+    "FrontendBucketNameOutput": "todobgosakabluestack-todoapposakabluefrontendbucketblued3325efb",
+    "AppUrlOutput": "http://localhost:4566/todobgosakabluestack-todoapposakabluefrontendbucketblued3325efb/index.html",
+    "DeploymentRegionOutput": "ap-northeast-3",
+    "ColorOutput": "blue"
+  },
+  "TodoBgOsakaGreenStack": {
+    "TodoAppOsakaGreenTodoApiGreenEndpointEA303D5D": "https://30249a1d6b.execute-api.us-east-1.amazonaws.com/v1/",
+    "ApiIdOutput": "30249a1d6b",
+    "ApiUrlOutput": "http://localhost:4566/restapis/30249a1d6b/v1/_user_request_",
+    "FrontendBucketNameOutput": "todobgosakagreenstack-todoapposakagreenfrontendbucketgreen8e517",
+    "AppUrlOutput": "http://localhost:4566/todobgosakagreenstack-todoapposakagreenfrontendbucketgreen8e517/index.html",
+    "DeploymentRegionOutput": "ap-northeast-3",
+    "ColorOutput": "green"
   }
 }
